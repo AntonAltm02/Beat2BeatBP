@@ -36,8 +36,8 @@ def get_r_peaks(fs, ecg_signal):
 
 class Processor:
     def __init__(self, data_path, replace, config_filter):
-        self.data_path = data_path + "../data/raw/"
-        self.target_path = data_path + "../data/processed/"
+        self.data_path = data_path + "/../data/raw/"
+        self.target_path = data_path + "/../data/processed/"
         self.config_filter=config_filter
         self.fs = 100
 
@@ -258,11 +258,11 @@ class Processor:
                     pat.append((np.min(diff[criteria]) / self.fs) * 1000)  # in ms
                 except:
                     pat.append(0)
-            return pat, pat_r_peaks
+            return pat
 
         # for pat_type in ["on", "sp", "dn", "dp", "u", "v", "w", "a", "b", "c", "d", "e", "f", "p1", "p2"]:
         for pat_type in ["on", "sp", "dn", "dp"]:
-            pat, pat_r_peaks = calc_PAT(reference_points[pat_type])
+            pat = calc_PAT(reference_points[pat_type])
             np.save(self.target_path + f"ExtractedPAT/{pat_type.capitalize()}/" + self.id[:10], pat)
 
     """
