@@ -1,4 +1,5 @@
 from data.preprocessing import Processor
+import data.statistics as stats
 import os
 
 
@@ -15,3 +16,12 @@ if __name__ == "__main__":
     """
     pre_processor = Processor(data_path=data_path, replace=True, config_filter=None)
     pre_processor.process()
+
+    """
+    Statistics to analyze the extracted PAT, BP or features. The file statistics.py holds
+    functions to plot the PAT for a selected subject, calculate and plot the correlation 
+    between PAT and BP, etc.
+    """
+    path_main = data_path + "/../data/processed/"
+    stats.plot_PAT(path_main=path_main, sub_file=["subject001"], pat_type="SP")
+    print("Stop here")
