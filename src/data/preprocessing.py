@@ -344,7 +344,7 @@ class Processor:
         print("Process complete \n")
 
         print("Starting the process of calculation and extraction of PAT")
-        self.replace = True
+        self.replace = False
         self.pat_extraction()
         print("Process complete \n")
 
