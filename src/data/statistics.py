@@ -30,7 +30,7 @@ def plot_PAT(path_main, sub_file, pat_type):
     plt.xlabel("Samples")
     plt.ylabel("PAT in ms")
     plt.title(f"PAT of subject {sub_file}")
-    plt.show()
+    # plt.show()
 
 def calculate_corr_BP_PAT(path_main, sub_files, pat_type):
     results = {
@@ -55,8 +55,8 @@ def calculate_corr_BP_PAT(path_main, sub_files, pat_type):
     r_spearman_sbp = np.vstack(results["spearman_sbp"])
     r_spearman_dbp = np.vstack(results["spearman_dbp"])
 
-    print(f"Pearson R - Overall mean of subject-wise R between PAT({pat_type}) and SBP: {np.mean(r_pearson_sbp)} +- {np.std(r_pearson_sbp)}")
-    print(f"Pearson R - Overall mean of subject-wise R between PAT({pat_type}) and DBP: {np.mean(r_pearson_dbp)} +- {np.std(r_pearson_dbp)}")
-    print(f"Spearman R - Overall mean of subject-wise R between PAT({pat_type}) and SBP: {np.mean(r_spearman_sbp)} +- {np.std(r_spearman_sbp)}")
-    print(f"Spearman R - Overall mean of subject-wise R between PAT({pat_type}) and DBP: {np.mean(r_spearman_dbp)} +- {np.std(r_spearman_dbp)}")
+    print(f"Pearson R - Overall mean of subject-wise R between PAT({pat_type}) and SBP - Mean: {np.round(np.mean(r_pearson_sbp), 2)} and SD: {np.round(np.std(r_pearson_sbp), 2)}")
+    print(f"Pearson R - Overall mean of subject-wise R between PAT({pat_type}) and DBP - Mean: {np.round(np.mean(r_pearson_dbp), 2)} and SD: {np.round(np.std(r_pearson_dbp), 2)}")
+    print(f"Spearman R - Overall mean of subject-wise R between PAT({pat_type}) and SBP - Mean: {np.round(np.mean(r_spearman_sbp), 2)} and SD: {np.round(np.std(r_spearman_sbp), 2)}")
+    print(f"Spearman R - Overall mean of subject-wise R between PAT({pat_type}) and DBP - Mean: {np.round(np.mean(r_spearman_dbp), 2)} and SD: {np.round(np.std(r_spearman_dbp), 2)}")
 
