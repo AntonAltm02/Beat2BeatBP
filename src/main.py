@@ -25,6 +25,6 @@ if __name__ == "__main__":
     path_main = data_path + "/../data/processed/"
     stats.plot_PAT(path_main=path_main, sub_file="subject001", pat_type="SP")
     files = os.listdir(os.path.join(data_path + "/../data/processed/ExtractedBP/SBP/"))
-    stats.calculate_corr_BP_PAT(path_main=path_main, sub_files=files, pat_type="DP")
+    stats.calculate_corr_BP_PAT(path_main=path_main, sub_files=files, pat_type=["ON", "SP", "DN", "DP"])
     stats.calculate_mean_std_PAT(path_main=path_main, sub_files=files, pat_type=["ON", "SP", "DN", "DP"])
     print("Stop here")
