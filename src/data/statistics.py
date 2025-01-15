@@ -16,21 +16,22 @@ def load_data(path_main, file, pat_type):
     pat = pat[no_zeros]
     return sbp, dbp, pat
 
-def plot_PAT(path_main, sub_file, pat_type):
+def plot_PAT(path_main, sub_files, pat_type):
     """
     Plot the extracted PAT of one selected subject
     :param path_main: processed, extracted PAT
-    :param sub_file: selected subject file
+    :param sub_files: selected subject file
     :param pat_type: PAT type (here: "ON", "DP", "DN", "SP", ...)
     :return:
     """
-    sbp, dbp, pat = load_data(path_main, sub_file, pat_type)
-    plt.figure()
-    plt.plot(pat)
-    plt.xlabel("Samples")
-    plt.ylabel("PAT in ms")
-    plt.title(f"PAT of subject {sub_file}")
-    # plt.show()
+    for file in sub_files:
+        sbp, dbp, pat = load_data(path_main, file[:10], pat_type)
+        plt.figure()
+        plt.plot(pat)
+        plt.xlabel("Samples")
+        plt.ylabel("PAT in ms")
+        plt.title(f"PAT of subject {file[:10]}")
+        plt.show()
 
 def calculate_mean_std_PAT(path_main, sub_files, pat_type):
     """
@@ -57,7 +58,7 @@ def calculate_mean_std_PAT(path_main, sub_files, pat_type):
         mean = np.vstack(results["mean"])
         std = np.vstack(results["std"])
 
-        print(f"Overall mean of subject-wise metrics of PAT({pat_type}) - Mean: {np.round(np.mean(mean), 2)} and SD: {np.round(np.mean(np.std(std)), 2)}")
+        print(f"Subject-wise metrics of PAT({pat_type}) - Mean: {np.round(np.mean(mean), 2)} and SD: {np.round(np.mean(np.std(std)), 2)}")
 
 def calculate_corr_BP_PAT(path_main, sub_files, pat_type):
     for pat_type in pat_type:
@@ -66,6 +67,20 @@ def calculate_corr_BP_PAT(path_main, sub_files, pat_type):
             "pearson_dbp": [],
             "spearman_sbp": [],
             "spearman_dbp": []
+        }
+        corr_strength_dbp = {
+            "very strong": [],
+            "strong": [],
+            "moderate": [],
+            "weak": [],
+            "very weak": []
+        }
+        corr_strength_sbp = {
+            "very strong": [],
+            "strong": [],
+            "moderate": [],
+            "weak": [],
+            "very weak": []
         }
         for file in sub_files:
             sbp, dbp, pat = load_data(path_main, file[:10], pat_type)
@@ -77,6 +92,28 @@ def calculate_corr_BP_PAT(path_main, sub_files, pat_type):
             }
             for key, value in correlations.items():
                 results[key].append(value)
+
+            if np.round(correlations["spearman_sbp"], 2) >= 0.8:
+                corr_strength_sbp["very strong"].append(file[:10])
+            elif 0.6 <= np.round(correlations["spearman_sbp"], 2) < 0.79:
+                corr_strength_sbp["strong"].append(file[:10])
+            elif 0.4 <= np.round(correlations["spearman_sbp"], 2) < 0.59:
+                corr_strength_sbp["moderate"].append(file[:10])
+            elif 0.2 <= np.round(correlations["spearman_sbp"], 2) < 0.39:
+                corr_strength_sbp["weak"].append(file[:10])
+            elif 0.0 <= np.round(correlations["spearman_sbp"], 2) < 0.19:
+                corr_strength_sbp["very weak"].append(file[:10])
+
+            if np.round(correlations["spearman_dbp"], 2) >= 0.8:
+                corr_strength_dbp["very strong"].append(file[:10])
+            elif 0.6 <= np.round(correlations["spearman_dbp"], 2) < 0.79:
+                corr_strength_dbp["strong"].append(file[:10])
+            elif 0.4 <= np.round(correlations["spearman_dbp"], 2) < 0.59:
+                corr_strength_dbp["moderate"].append(file[:10])
+            elif 0.2 <= np.round(correlations["spearman_dbp"], 2) < 0.39:
+                corr_strength_dbp["weak"].append(file[:10])
+            elif 0.0 <= np.round(correlations["spearman_dbp"], 2) < 0.19:
+                corr_strength_dbp["very weak"].append(file[:10])
 
         r_pearson_sbp = np.vstack(results["pearson_sbp"])
         r_pearson_dbp = np.vstack(results["pearson_dbp"])
