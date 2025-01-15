@@ -93,26 +93,26 @@ def calculate_corr_BP_PAT(path_main, sub_files, pat_type):
             for key, value in correlations.items():
                 results[key].append(value)
 
-            if np.round(correlations["spearman_sbp"], 2) >= 0.8:
+            if np.round(np.abs(correlations["spearman_sbp"]), 2) >= 0.8:
                 corr_strength_sbp["very strong"].append(file[:10])
-            elif 0.6 <= np.round(correlations["spearman_sbp"], 2) < 0.79:
+            elif 0.6 <= np.round(np.abs(correlations["spearman_sbp"]), 2) < 0.79:
                 corr_strength_sbp["strong"].append(file[:10])
-            elif 0.4 <= np.round(correlations["spearman_sbp"], 2) < 0.59:
+            elif 0.4 <= np.round(np.abs(correlations["spearman_sbp"]), 2) < 0.59:
                 corr_strength_sbp["moderate"].append(file[:10])
-            elif 0.2 <= np.round(correlations["spearman_sbp"], 2) < 0.39:
+            elif 0.2 <= np.round(np.abs(correlations["spearman_sbp"]), 2) < 0.39:
                 corr_strength_sbp["weak"].append(file[:10])
-            elif 0.0 <= np.round(correlations["spearman_sbp"], 2) < 0.19:
+            elif 0.0 <= np.round(np.abs(correlations["spearman_sbp"]), 2) < 0.19:
                 corr_strength_sbp["very weak"].append(file[:10])
 
-            if np.round(correlations["spearman_dbp"], 2) >= 0.8:
+            if np.round(np.abs(correlations["spearman_dbp"]), 2) >= 0.8:
                 corr_strength_dbp["very strong"].append(file[:10])
-            elif 0.6 <= np.round(correlations["spearman_dbp"], 2) < 0.79:
+            elif 0.6 <= np.round(np.abs(correlations["spearman_dbp"]), 2) < 0.79:
                 corr_strength_dbp["strong"].append(file[:10])
-            elif 0.4 <= np.round(correlations["spearman_dbp"], 2) < 0.59:
+            elif 0.4 <= np.round(np.abs(correlations["spearman_dbp"]), 2) < 0.59:
                 corr_strength_dbp["moderate"].append(file[:10])
-            elif 0.2 <= np.round(correlations["spearman_dbp"], 2) < 0.39:
+            elif 0.2 <= np.round(np.abs(correlations["spearman_dbp"]), 2) < 0.39:
                 corr_strength_dbp["weak"].append(file[:10])
-            elif 0.0 <= np.round(correlations["spearman_dbp"], 2) < 0.19:
+            elif 0.0 <= np.round(np.abs(correlations["spearman_dbp"]), 2) < 0.19:
                 corr_strength_dbp["very weak"].append(file[:10])
 
         r_pearson_sbp = np.vstack(results["pearson_sbp"])
@@ -124,4 +124,3 @@ def calculate_corr_BP_PAT(path_main, sub_files, pat_type):
         print(f"Pearson R - Overall mean of subject-wise R between PAT({pat_type}) and DBP - Mean: {np.round(np.mean(r_pearson_dbp), 2)} and SD: {np.round(np.std(r_pearson_dbp), 2)}")
         print(f"Spearman R - Overall mean of subject-wise R between PAT({pat_type}) and SBP - Mean: {np.round(np.mean(r_spearman_sbp), 2)} and SD: {np.round(np.std(r_spearman_sbp), 2)}")
         print(f"Spearman R - Overall mean of subject-wise R between PAT({pat_type}) and DBP - Mean: {np.round(np.mean(r_spearman_dbp), 2)} and SD: {np.round(np.std(r_spearman_dbp), 2)} \n")
-
