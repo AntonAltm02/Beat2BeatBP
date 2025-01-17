@@ -25,13 +25,14 @@ def plot_PAT(path_main, sub_files, pat_type):
     :return:
     """
     for file in sub_files:
-        sbp, dbp, pat = load_data(path_main, file[:10], pat_type)
-        plt.figure()
-        plt.plot(pat)
-        plt.xlabel("Samples")
-        plt.ylabel("PAT in ms")
-        plt.title(f"PAT of subject {file[:10]}")
-        plt.show()
+        for pat_type in pat_type:
+            sbp, dbp, pat = load_data(path_main, file[:10], pat_type)
+            plt.figure()
+            plt.plot(pat)
+            plt.xlabel("Samples")
+            plt.ylabel("PAT in ms")
+            plt.title(f"PAT of subject {file[:10]}")
+            plt.show()
 
 def calculate_mean_std_PAT(path_main, sub_files, pat_type):
     """

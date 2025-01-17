@@ -244,14 +244,20 @@ class Processor:
         # the indices of the filtered detection points need to be matched to the vanilla indices of detection points
         self.filtered_indices = np.where(np.isin(filtered_detection_points, self.detection_points))[0]
         reference_points = self.fiducial_points.loc[self.filtered_indices]
-        r_peaks = get_r_peaks(fs=self.fs, ecg_signal=self.ecg_segment)
+        rPeaks = get_r_peaks(fs=self.fs, ecg_signal=self.ecg_segment)
+
+        """
+        plt.figure()
+        plt.plot(self.ppg_segment)
+        plt.plot(self.ecg_segment)
+        plt.show()
 
         def calc_PAT(ref_points):
             pat = []
             for points in ref_points:
                 try:
                     # calculating the difference between the detection point and the r-peak indices
-                    diff = points - r_peaks
+                    diff = points - rPeaks
                     # setting the criteria for the PAT value range
                     criteria = np.where((diff > 5) & (diff < 80))
                     # by using the criteria the correct difference is selected
@@ -264,6 +270,29 @@ class Processor:
         for pat_type in ["on", "sp", "dn", "dp"]:
             pat = calc_PAT(reference_points[pat_type])
             np.save(self.target_path + f"ExtractedPAT/{pat_type.capitalize()}/" + self.id[:10], pat)
+        """
+
+        pat_values = {
+            "on": [],
+            "sp": [],
+            "dn": [],
+            "dp": []
+        }
+        for _, ref_pts in reference_points.iterrows():
+            diff_onset_rPeak = ref_pts["on"] - rPeaks
+            criteriaIdx = np.where((diff_onset_rPeak > 3) & (diff_onset_rPeak < 40))[0]
+            if len(criteriaIdx) == 0:
+                for key in pat_values:
+                    pat_values[key].append(0)
+            else:
+                selected_rPeak = rPeaks[np.max(criteriaIdx)]
+                for key in pat_values:
+                    if not np.isnan(ref_pts[key]):
+                        pat_values[key].append(int(((ref_pts[key] - selected_rPeak) / self.fs) * 1000))
+                    else:
+                        pat_values[key].append(0)
+        for key, values in pat_values.items():
+            np.save(self.target_path + f"ExtractedPAT/{key.capitalize()}/" + self.id[:10], values)
 
     """
     Extraction of the different feature subsets
@@ -344,7 +373,7 @@ class Processor:
         print("Process complete \n")
 
         print("Starting the process of calculation and extraction of PAT")
-        self.replace = True
+        self.replace = False
         self.pat_extraction()
         print("Process complete \n")
 
