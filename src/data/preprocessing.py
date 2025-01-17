@@ -280,7 +280,7 @@ class Processor:
         }
         for _, ref_pts in reference_points.iterrows():
             diff_onset_rPeak = ref_pts["on"] - rPeaks
-            criteriaIdx = np.where((diff_onset_rPeak > 3) & (diff_onset_rPeak < 40))[0]
+            criteriaIdx = np.where((diff_onset_rPeak > 15) & (diff_onset_rPeak < 30))[0]
             if len(criteriaIdx) == 0:
                 for key in pat_values:
                     pat_values[key].append(0)
