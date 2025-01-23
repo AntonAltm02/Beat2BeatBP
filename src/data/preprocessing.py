@@ -246,32 +246,6 @@ class Processor:
         reference_points = self.fiducial_points.loc[self.filtered_indices]
         rPeaks = get_r_peaks(fs=self.fs, ecg_signal=self.ecg_segment)
 
-        """
-        plt.figure()
-        plt.plot(self.ppg_segment)
-        plt.plot(self.ecg_segment)
-        plt.show()
-
-        def calc_PAT(ref_points):
-            pat = []
-            for points in ref_points:
-                try:
-                    # calculating the difference between the detection point and the r-peak indices
-                    diff = points - rPeaks
-                    # setting the criteria for the PAT value range
-                    criteria = np.where((diff > 5) & (diff < 80))
-                    # by using the criteria the correct difference is selected
-                    pat.append((np.min(diff[criteria]) / self.fs) * 1000)  # in ms
-                except:
-                    pat.append(0)
-            return pat
-
-        # for pat_type in ["on", "sp", "dn", "dp", "u", "v", "w", "a", "b", "c", "d", "e", "f", "p1", "p2"]:
-        for pat_type in ["on", "sp", "dn", "dp"]:
-            pat = calc_PAT(reference_points[pat_type])
-            np.save(self.target_path + f"ExtractedPAT/{pat_type.capitalize()}/" + self.id[:10], pat)
-        """
-
         pat_values = {
             "on": [],
             "sp": [],
@@ -280,6 +254,7 @@ class Processor:
             "u": [],
             "it": []
         }
+        vpg = np.gradient(self.ppg_segment)
         for _, ref_pts in reference_points.iterrows():
             diff_onset_rPeak = ref_pts["on"] - rPeaks
             criteriaIdx = np.where((diff_onset_rPeak > 7) & (diff_onset_rPeak < 30))[0]
@@ -289,22 +264,24 @@ class Processor:
             else:
                 selected_rPeak = rPeaks[np.max(criteriaIdx)]
                 for key in pat_values:
-                    if not np.isnan(ref_pts[key]):
-                        if key == "it":
-                            vpg = np.gradient(self.ppg_segment)
-                            tangent_slope_md = vpg[ref_pts["u"]]
-                            tangent_slope_v = vpg[ref_pts["on"]]
+                    if key == "it":
+                        try:
+                            tangent_slope_md = vpg[int(ref_pts["u"])]
+                            tangent_slope_v = vpg[int(ref_pts["on"])]
                             # calculating the tangent intercept of md and v
-                            tangent_intercept_md = self.ppg_segment[ref_pts["u"]] - vpg[ref_pts["u"]] * ref_pts["u"]
-                            tangent_intercept_v = self.ppg_segment[ref_pts["on"]] - vpg[ref_pts["on"]] * ref_pts["on"]
+                            tangent_intercept_md = self.ppg_segment[int(ref_pts["u"])] - vpg[int(ref_pts["u"])] * ref_pts["u"]
+                            tangent_intercept_v = self.ppg_segment[int(ref_pts["on"])] - vpg[int(ref_pts["on"])] * ref_pts["on"]
                             # calculating the intersecting point of the tangents of v and md
                             intersecting_point = (tangent_intercept_v - tangent_intercept_md) / (
                                     tangent_slope_md - tangent_slope_v)
                             pat_values[key].append(int(((intersecting_point - selected_rPeak) / self.fs) * 1000))
-                        else:
-                            pat_values[key].append(int(((ref_pts[key] - selected_rPeak) / self.fs) * 1000))
+                        except:
+                            pat_values[key].append(0)
                     else:
-                        pat_values[key].append(0)
+                        if not np.isnan(ref_pts[key]):
+                            pat_values[key].append(int(((ref_pts[key] - selected_rPeak) / self.fs) * 1000))
+                        else:
+                            pat_values[key].append(0)
         for key, values in pat_values.items():
             np.save(self.target_path + f"ExtractedPAT/{key.capitalize()}/" + self.id[:10], values)
 
