@@ -292,15 +292,17 @@ class Processor:
                     if not np.isnan(ref_pts[key]):
                         if key == "it":
                             vpg = np.gradient(self.ppg_segment)
-                            tangent_slope_md = vpg[detection_Pt]
-                            tangent_slope_v = vpg[idx_min[v_pt]]
+                            tangent_slope_md = vpg[ref_pts["u"]]
+                            tangent_slope_v = vpg[ref_pts["on"]]
                             # calculating the tangent intercept of md and v
-                            tangent_intercept_md = self.ppg_segment[detection_Pt] - vpg[detection_Pt] * detection_Pt
-                            tangent_intercept_v = self.ppg_segment[idx_min[v_pt]] - vpg[idx_min[v_pt]] * idx_min[v_pt]
+                            tangent_intercept_md = self.ppg_segment[ref_pts["u"]] - vpg[ref_pts["u"]] * ref_pts["u"]
+                            tangent_intercept_v = self.ppg_segment[ref_pts["on"]] - vpg[ref_pts["on"]] * ref_pts["on"]
                             # calculating the intersecting point of the tangents of v and md
-                            intersecting_point_x = (tangent_intercept_v - tangent_intercept_md) / (
+                            intersecting_point = (tangent_intercept_v - tangent_intercept_md) / (
                                     tangent_slope_md - tangent_slope_v)
-                        pat_values[key].append(int(((ref_pts[key] - selected_rPeak) / self.fs) * 1000))
+                            pat_values[key].append(int(((intersecting_point - selected_rPeak) / self.fs) * 1000))
+                        else:
+                            pat_values[key].append(int(((ref_pts[key] - selected_rPeak) / self.fs) * 1000))
                     else:
                         pat_values[key].append(0)
         for key, values in pat_values.items():
