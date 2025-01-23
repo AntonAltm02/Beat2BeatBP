@@ -276,11 +276,13 @@ class Processor:
             "on": [],
             "sp": [],
             "dn": [],
-            "dp": []
+            "dp": [],
+            "u": [],
+            "it": []
         }
         for _, ref_pts in reference_points.iterrows():
             diff_onset_rPeak = ref_pts["on"] - rPeaks
-            criteriaIdx = np.where((diff_onset_rPeak > 15) & (diff_onset_rPeak < 30))[0]
+            criteriaIdx = np.where((diff_onset_rPeak > 7) & (diff_onset_rPeak < 30))[0]
             if len(criteriaIdx) == 0:
                 for key in pat_values:
                     pat_values[key].append(0)
@@ -288,6 +290,16 @@ class Processor:
                 selected_rPeak = rPeaks[np.max(criteriaIdx)]
                 for key in pat_values:
                     if not np.isnan(ref_pts[key]):
+                        if key == "it":
+                            vpg = np.gradient(self.ppg_segment)
+                            tangent_slope_md = vpg[detection_Pt]
+                            tangent_slope_v = vpg[idx_min[v_pt]]
+                            # calculating the tangent intercept of md and v
+                            tangent_intercept_md = self.ppg_segment[detection_Pt] - vpg[detection_Pt] * detection_Pt
+                            tangent_intercept_v = self.ppg_segment[idx_min[v_pt]] - vpg[idx_min[v_pt]] * idx_min[v_pt]
+                            # calculating the intersecting point of the tangents of v and md
+                            intersecting_point_x = (tangent_intercept_v - tangent_intercept_md) / (
+                                    tangent_slope_md - tangent_slope_v)
                         pat_values[key].append(int(((ref_pts[key] - selected_rPeak) / self.fs) * 1000))
                     else:
                         pat_values[key].append(0)
@@ -373,7 +385,7 @@ class Processor:
         print("Process complete \n")
 
         print("Starting the process of calculation and extraction of PAT")
-        self.replace = False
+        self.replace = True
         self.pat_extraction()
         print("Process complete \n")
 
