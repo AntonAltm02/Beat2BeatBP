@@ -257,7 +257,7 @@ class Processor:
         vpg = np.gradient(self.ppg_segment)
         for _, ref_pts in reference_points.iterrows():
             diff_onset_rPeak = ref_pts["on"] - rPeaks
-            criteriaIdx = np.where((diff_onset_rPeak > 7) & (diff_onset_rPeak < 30))[0]
+            criteriaIdx = np.where((diff_onset_rPeak > 7) & (diff_onset_rPeak < 35))[0]
             if len(criteriaIdx) == 0:
                 for key in pat_values:
                     pat_values[key].append(0)
@@ -274,7 +274,10 @@ class Processor:
                             # calculating the intersecting point of the tangents of v and md
                             intersecting_point = (tangent_intercept_v - tangent_intercept_md) / (
                                     tangent_slope_md - tangent_slope_v)
-                            pat_values[key].append(int(((intersecting_point - selected_rPeak) / self.fs) * 1000))
+                            if ref_pts["on"] < intersecting_point < ref_pts["u"]:
+                                pat_values[key].append(int(((intersecting_point - selected_rPeak) / self.fs) * 1000))
+                            else:
+                                pat_values[key].append(0)
                         except:
                             pat_values[key].append(0)
                     else:
@@ -283,18 +286,25 @@ class Processor:
                         else:
                             pat_values[key].append(0)
         for key, values in pat_values.items():
+            if key == "u" or key == "it":
+                no_zeros = (pat_values[key] != 0)
+                pat_values[key] = pat_values[key][no_zeros]
+                tmp = np.where(pat_values[key] > (np.mean(pat_values[key]) + 0.25 * np.mean(pat_values[key])))[0]
+                values = np.array(values)
+                values[tmp] = 0
+                pat_values[key] = values
             np.save(self.target_path + f"ExtractedPAT/{key.capitalize()}/" + self.id[:10], values)
 
     """
     Extraction of the different feature subsets
-    - AF: all features
-    - RF: features derived only from the reconstructed beat
-    - OF: features derived only from the original beat
-    - KF: features derived only from the kernels of the beat
     """
     def feature_extraction(self):
         """
-
+        Extraction of the different feature subsets
+        - AF: all features
+        - RF: features derived only from the reconstructed beat
+        - OF: features derived only from the original beat
+        - KF: features derived only from the kernels of the beat
         :return:
         """
         self.ids = os.listdir(self.target_path + "SelectedData/")
