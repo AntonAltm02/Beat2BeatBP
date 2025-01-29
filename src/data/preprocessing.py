@@ -145,8 +145,8 @@ class Processor:
         :return:
         """
         signal = DotMap()
-        signal.start_sig = 0
-        signal.end_sig = -1
+        signal.start_sig = 0 # start sample of the signal
+        signal.end_sig = -1 # last sample of the signal
         signal.fs = self.fs
         signal.v = self.ppg_segment
         signal.filtering = True  # whether to filter the PPG signal
@@ -156,14 +156,47 @@ class Processor:
         signal.sm_wins = {'ppg': 50, 'vpg': 10, 'apg': 10, 'jpg': 10}  # smoothing windows in millisecond for the PPG, PPG', PPG'' and PPG'''
 
         prep = PP.Preprocessing(signal, filtering=True)
-        signal.filt_sig = prep[0]
-        signal.filt_d1 = prep[1]
-        signal.filt_d2 = prep[2]
-        signal.filt_d3 = prep[3]
+        signal.filt_ppg = prep[0]
+        signal.filt_vpg = prep[1]
+        signal.filt_apg = prep[2]
+        signal.filt_jpg = prep[3]
 
+        """
+        Plot the raw and the derived signals before extracting the fiducial points
+        """
+        # setup figure
+        fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(5, 1, sharex=True, sharey=False)
+        t = np.arange(0, len(signal.ppg)) / signal.fs
+        # plot filtered PPG signal
+        ax1.plot(t, signal.ppg)
+        ax1.set(xlabel='', ylabel='Raw PPG')
+        # plot filtered PPG signal
+        ax2.plot(t, signal.filt_ppg)
+        ax2.set(xlabel='', ylabel='PPG')
+        # plot first derivative
+        ax3.plot(t, signal.filt_vpg)
+        ax3.set(xlabel='', ylabel='PPG\'')
+        # plot second derivative
+        ax4.plot(t, signal.filt_apg)
+        ax4.set(xlabel='', ylabel='PPG\'\'')
+        # plot third derivative
+        ax5.plot(t, signal.filt_jpg)
+        ax5.set(xlabel='Time (s)', ylabel='PPG\'\'\'')
+        # show plot
+        plt.show()
+
+        """
+        Extracting the fiducial points
+        """
         s = PPG(signal)
+        # initializing the fiducials package of pyPPG
         fpex = FP.FpCollection(s=s)
+        # extracting the fiducials
         fiducials = fpex.get_fiducials(s=s)
+        # Create a fiducials class
+        fp = Fiducials(fp=fiducials)
+        # Plot fiducial points
+        plot_fiducials(s, fp, savingfolder, legend_fontsize=12)
         return fiducials
 
     def fiducial_points_extraction(self):
@@ -369,12 +402,12 @@ class Processor:
         print("Process complete \n")
 
         print("Starting the process of analysis and extraction of the fiducial points per beat")
-        self.replace = False
+        self.replace = True
         self.fiducial_points_extraction()
         print("Process complete \n")
 
         print("Starting the process of calculation and extraction of PAT")
-        self.replace = True
+        self.replace = False
         self.pat_extraction()
         print("Process complete \n")
 
