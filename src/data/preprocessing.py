@@ -1,15 +1,15 @@
 import os
-from tqdm import tqdm
-import numpy as np
 import scipy
-import pandas as pd
-from biosppy import signals
-from pyPPG import PPG
-import pyPPG.preproc as PP
-import pyPPG.fiducials as FP
-from dotmap import DotMap
-import matplotlib.pyplot as plt
 import matplotlib
+import numpy as np
+import pandas as pd
+from tqdm import tqdm
+from dotmap import DotMap
+import pyPPG.preproc as PP
+from biosppy import signals
+import pyPPG.fiducials as FP
+from pyPPG import PPG, Fiducials
+import matplotlib.pyplot as plt
 matplotlib.use('TkAgg')
 
 
