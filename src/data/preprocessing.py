@@ -8,6 +8,7 @@ from dotmap import DotMap
 import pyPPG.preproc as PP
 from biosppy import signals
 import pyPPG.fiducials as FP
+from pyPPG.datahandling import plot_fiducials
 from pyPPG import PPG, Fiducials
 import matplotlib.pyplot as plt
 matplotlib.use('TkAgg')
@@ -145,8 +146,8 @@ class Processor:
         :return:
         """
         signal = DotMap()
-        signal.start_sig = 0 # start sample of the signal
-        signal.end_sig = -1 # last sample of the signal
+        signal.start = 0 # start sample of the signal
+        signal.end = -1 # last sample of the signal
         signal.fs = self.fs
         signal.v = self.ppg_segment
         signal.filtering = True  # whether to filter the PPG signal
@@ -157,18 +158,22 @@ class Processor:
 
         prep = PP.Preprocessing(signal, filtering=True)
         signal.filt_ppg = prep[0]
+        signal.filt_sig = prep[0]
         signal.filt_vpg = prep[1]
+        signal.filt_d1 = prep[1]
         signal.filt_apg = prep[2]
+        signal.filt_d2 = prep[2]
         signal.filt_jpg = prep[3]
+        signal.filt_d3 = prep[3]
 
         """
         Plot the raw and the derived signals before extracting the fiducial points
         """
         # setup figure
         fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(5, 1, sharex=True, sharey=False)
-        t = np.arange(0, len(signal.ppg)) / signal.fs
+        t = np.arange(0, len(signal.v)) / signal.fs
         # plot filtered PPG signal
-        ax1.plot(t, signal.ppg)
+        ax1.plot(t, signal.v)
         ax1.set(xlabel='', ylabel='Raw PPG')
         # plot filtered PPG signal
         ax2.plot(t, signal.filt_ppg)
@@ -183,7 +188,8 @@ class Processor:
         ax5.plot(t, signal.filt_jpg)
         ax5.set(xlabel='Time (s)', ylabel='PPG\'\'\'')
         # show plot
-        plt.show()
+        plt.savefig(self.data_path + "/../../reports/figures/pyPPG Signals/" + self.id[:10] + ".png")
+        # plt.show()
 
         """
         Extracting the fiducial points
@@ -196,10 +202,44 @@ class Processor:
         # Create a fiducials class
         fp = Fiducials(fp=fiducials)
         # Plot fiducial points
-        plot_fiducials(s, fp, savingfolder, legend_fontsize=12)
+        s.name = f"Fiducials Extraction - {self.id[:10]}"
+        savingFolder = self.data_path + "/../../reports/figures/pyPPG Fiducials/"
+        plot_fiducials(s, fp, savingFolder)
         return fiducials
 
+    def fiducial_points_plotter(self):
+        """
+
+        :return:
+        """
+        self.ids = os.listdir(self.target_path + "FiducialPoints/")
+        if not self.replace:
+            id_ready = os.listdir(self.target_path + "../../reports/figures/pyPPG Fiducials/")
+            self.ids = [x for x in self.ids if x[:10] + '.png' not in id_ready]
+        for self.id in tqdm(self.ids, desc="Creating the plots of Fiducials of each subject"):
+            fiducials = pd.read_csv(self.target_path + "FiducialPoints/" + self.id)
+            self.load_mat_data()
+            start_idx = 1
+            end_idx = 100
+            fiducials = fiducials.iloc[start_idx:end_idx]
+            self.ppg_segment = self.ppg_segment[:int(fiducials["dp"].iloc[-1])+1]
+
+            fig = plt.figure(figsize=(15, 8))
+            ax1 = plt.subplot(211)
+            ax1.set(xlabel='Samples (a.u.)', ylabel='Filtered PPG')
+            plt.plot(self.ppg_segment, label=None)
+            plt.plot(fiducials["on"], self.ppg_segment[fiducials["on"]], "o")
+            ax2 = plt.subplot(212, sharex=ax1)
+            ax2.set(xlabel='Samples (a.u.)', ylabel='Filtered VPG')
+            plt.plot(self.ppg_segment, label=None)
+            fig.subplots_adjust(hspace=0, wspace=0)
+            plt.show()
+
     def fiducial_points_extraction(self):
+        """
+
+        :return:
+        """
         self.ids = os.listdir(self.target_path + "SelectedData/")
         if not self.replace:
             id_ready = os.listdir(self.target_path + "FiducialPoints/")
@@ -264,8 +304,11 @@ class Processor:
         reference: https://pyppg.readthedocs.io/en/latest/tutorials/pyPPG_example.html
         :return:
         """
-
         def get_filtered_detection_points():
+            """
+
+            :return:
+            """
             tmp = []
             for detection_point in self.detection_points:
                 for fiducial_onsets in self.fiducial_points["on"]:
@@ -402,7 +445,7 @@ class Processor:
         print("Process complete \n")
 
         print("Starting the process of analysis and extraction of the fiducial points per beat")
-        self.replace = True
+        self.replace = False
         self.fiducial_points_extraction()
         print("Process complete \n")
 

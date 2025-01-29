@@ -16,6 +16,7 @@ if __name__ == "__main__":
     """
     pre_processor = Processor(data_path=data_path, replace=True, config_filter=None)
     pre_processor.process()
+    pre_processor.fiducial_points_plotter()
 
     """
     Statistics to analyze the extracted PAT, BP or features. The file statistics.py holds
@@ -24,7 +25,7 @@ if __name__ == "__main__":
     """
     path_main = data_path + "/../data/processed/"
     files = os.listdir(os.path.join(data_path + "/../data/processed/ExtractedBP/SBP/"))
-    stats.plot_PAT(path_main=path_main, sub_files=files, pat_type=["ON", "SP"])
-    stats.calculate_corr_BP_PAT(path_main=path_main, sub_files=files, pat_type=["ON", "SP", "DN", "DP"])
-    stats.calculate_mean_std_PAT(path_main=path_main, sub_files=files, pat_type=["ON", "SP", "DN", "DP"])
+    # stats.plot_PAT(path_main=path_main, sub_files=files, pat_type=["IT"])
+    stats.calculate_corr_BP_PAT(path_main=path_main, sub_files=files, pat_type=["ON", "SP", "DN", "DP", "IT", "U"])
+    stats.calculate_mean_std_PAT(path_main=path_main, sub_files=files, pat_type=["ON", "SP", "DN", "DP", "IT", "U"])
     print("Stop here")
