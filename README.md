@@ -24,4 +24,6 @@ The toolbox identifies individual pulse waves in a PPG signal by identifying sys
 
 ![Alt text](./docs/pyPPG_Sample.svg)
 
+As example provided below, the pyPPG toolbox facilitates the loading of raw PPG signals from various file formats, including .mat, .csv, .txt, or .edf. This enables then the extraction of fiducial points from PPG signals, encompassing PPG, PPG’, PPG’’, and PPG’’’. Here, the extracted fiducial points are visually represented through plotting:
+
 ![Alt text](./docs/PPG_FiducialPoints.png)
