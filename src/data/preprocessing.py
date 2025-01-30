@@ -1,15 +1,16 @@
 import os
-from tqdm import tqdm
-import numpy as np
 import scipy
-import pandas as pd
-from biosppy import signals
-from pyPPG import PPG
-import pyPPG.preproc as PP
-import pyPPG.fiducials as FP
-from dotmap import DotMap
-import matplotlib.pyplot as plt
 import matplotlib
+import numpy as np
+import pandas as pd
+from tqdm import tqdm
+from dotmap import DotMap
+import pyPPG.preproc as PP
+from biosppy import signals
+import pyPPG.fiducials as FP
+from pyPPG.datahandling import plot_fiducials
+from pyPPG import PPG, Fiducials
+import matplotlib.pyplot as plt
 matplotlib.use('TkAgg')
 
 
@@ -145,8 +146,8 @@ class Processor:
         :return:
         """
         signal = DotMap()
-        signal.start_sig = 0
-        signal.end_sig = -1
+        signal.start = 0 # start sample of the signal
+        signal.end = -1 # last sample of the signal
         signal.fs = self.fs
         signal.v = self.ppg_segment
         signal.filtering = True  # whether to filter the PPG signal
@@ -156,17 +157,89 @@ class Processor:
         signal.sm_wins = {'ppg': 50, 'vpg': 10, 'apg': 10, 'jpg': 10}  # smoothing windows in millisecond for the PPG, PPG', PPG'' and PPG'''
 
         prep = PP.Preprocessing(signal, filtering=True)
+        signal.filt_ppg = prep[0]
         signal.filt_sig = prep[0]
+        signal.filt_vpg = prep[1]
         signal.filt_d1 = prep[1]
+        signal.filt_apg = prep[2]
         signal.filt_d2 = prep[2]
+        signal.filt_jpg = prep[3]
         signal.filt_d3 = prep[3]
 
+        """
+        Plot the raw and the derived signals before extracting the fiducial points
+        """
+        # setup figure
+        fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(5, 1, sharex=True, sharey=False)
+        t = np.arange(0, len(signal.v)) / signal.fs
+        # plot filtered PPG signal
+        ax1.plot(t, signal.v)
+        ax1.set(xlabel='', ylabel='Raw PPG')
+        # plot filtered PPG signal
+        ax2.plot(t, signal.filt_ppg)
+        ax2.set(xlabel='', ylabel='PPG')
+        # plot first derivative
+        ax3.plot(t, signal.filt_vpg)
+        ax3.set(xlabel='', ylabel='PPG\'')
+        # plot second derivative
+        ax4.plot(t, signal.filt_apg)
+        ax4.set(xlabel='', ylabel='PPG\'\'')
+        # plot third derivative
+        ax5.plot(t, signal.filt_jpg)
+        ax5.set(xlabel='Time (s)', ylabel='PPG\'\'\'')
+        # show plot
+        plt.savefig(self.data_path + "/../../reports/figures/pyPPG Signals/" + self.id[:10] + ".png")
+        # plt.show()
+
+        """
+        Extracting the fiducial points
+        """
         s = PPG(signal)
+        # initializing the fiducials package of pyPPG
         fpex = FP.FpCollection(s=s)
+        # extracting the fiducials
         fiducials = fpex.get_fiducials(s=s)
+        # Create a fiducials class
+        fp = Fiducials(fp=fiducials)
+        # Plot fiducial points
+        s.name = f"Fiducials Extraction - {self.id[:10]}"
+        savingFolder = self.data_path + "/../../reports/figures/pyPPG Fiducials/"
+        plot_fiducials(s, fp, savingFolder)
         return fiducials
 
+    def fiducial_points_plotter(self):
+        """
+
+        :return:
+        """
+        self.ids = os.listdir(self.target_path + "FiducialPoints/")
+        if not self.replace:
+            id_ready = os.listdir(self.target_path + "../../reports/figures/pyPPG Fiducials/")
+            self.ids = [x for x in self.ids if x[:10] + '.png' not in id_ready]
+        for self.id in tqdm(self.ids, desc="Creating the plots of Fiducials of each subject"):
+            fiducials = pd.read_csv(self.target_path + "FiducialPoints/" + self.id)
+            self.load_mat_data()
+            start_idx = 1
+            end_idx = 100
+            fiducials = fiducials.iloc[start_idx:end_idx]
+            self.ppg_segment = self.ppg_segment[:int(fiducials["dp"].iloc[-1])+1]
+
+            fig = plt.figure(figsize=(15, 8))
+            ax1 = plt.subplot(211)
+            ax1.set(xlabel='Samples (a.u.)', ylabel='Filtered PPG')
+            plt.plot(self.ppg_segment, label=None)
+            plt.plot(fiducials["on"], self.ppg_segment[fiducials["on"]], "o")
+            ax2 = plt.subplot(212, sharex=ax1)
+            ax2.set(xlabel='Samples (a.u.)', ylabel='Filtered VPG')
+            plt.plot(self.ppg_segment, label=None)
+            fig.subplots_adjust(hspace=0, wspace=0)
+            plt.show()
+
     def fiducial_points_extraction(self):
+        """
+
+        :return:
+        """
         self.ids = os.listdir(self.target_path + "SelectedData/")
         if not self.replace:
             id_ready = os.listdir(self.target_path + "FiducialPoints/")
@@ -231,8 +304,11 @@ class Processor:
         reference: https://pyppg.readthedocs.io/en/latest/tutorials/pyPPG_example.html
         :return:
         """
-
         def get_filtered_detection_points():
+            """
+
+            :return:
+            """
             tmp = []
             for detection_point in self.detection_points:
                 for fiducial_onsets in self.fiducial_points["on"]:
@@ -244,37 +320,67 @@ class Processor:
         # the indices of the filtered detection points need to be matched to the vanilla indices of detection points
         self.filtered_indices = np.where(np.isin(filtered_detection_points, self.detection_points))[0]
         reference_points = self.fiducial_points.loc[self.filtered_indices]
-        r_peaks = get_r_peaks(fs=self.fs, ecg_signal=self.ecg_segment)
+        rPeaks = get_r_peaks(fs=self.fs, ecg_signal=self.ecg_segment)
 
-        def calc_PAT(ref_points):
-            pat = []
-            for points in ref_points:
-                try:
-                    # calculating the difference between the detection point and the r-peak indices
-                    diff = points - r_peaks
-                    # setting the criteria for the PAT value range
-                    criteria = np.where((diff > 5) & (diff < 80))
-                    # by using the criteria the correct difference is selected
-                    pat.append((np.min(diff[criteria]) / self.fs) * 1000)  # in ms
-                except:
-                    pat.append(0)
-            return pat
-
-        # for pat_type in ["on", "sp", "dn", "dp", "u", "v", "w", "a", "b", "c", "d", "e", "f", "p1", "p2"]:
-        for pat_type in ["on", "sp", "dn", "dp"]:
-            pat = calc_PAT(reference_points[pat_type])
-            np.save(self.target_path + f"ExtractedPAT/{pat_type.capitalize()}/" + self.id[:10], pat)
+        pat_values = {
+            "on": [],
+            "sp": [],
+            "dn": [],
+            "dp": [],
+            "u": [],
+            "it": []
+        }
+        vpg = np.gradient(self.ppg_segment)
+        for _, ref_pts in reference_points.iterrows():
+            diff_onset_rPeak = ref_pts["on"] - rPeaks
+            criteriaIdx = np.where((diff_onset_rPeak > 7) & (diff_onset_rPeak < 35))[0]
+            if len(criteriaIdx) == 0:
+                for key in pat_values:
+                    pat_values[key].append(0)
+            else:
+                selected_rPeak = rPeaks[np.max(criteriaIdx)]
+                for key in pat_values:
+                    if key == "it":
+                        try:
+                            tangent_slope_md = vpg[int(ref_pts["u"])]
+                            tangent_slope_v = vpg[int(ref_pts["on"])]
+                            # calculating the tangent intercept of md and v
+                            tangent_intercept_md = self.ppg_segment[int(ref_pts["u"])] - vpg[int(ref_pts["u"])] * ref_pts["u"]
+                            tangent_intercept_v = self.ppg_segment[int(ref_pts["on"])] - vpg[int(ref_pts["on"])] * ref_pts["on"]
+                            # calculating the intersecting point of the tangents of v and md
+                            intersecting_point = (tangent_intercept_v - tangent_intercept_md) / (
+                                    tangent_slope_md - tangent_slope_v)
+                            if ref_pts["on"] < intersecting_point < ref_pts["u"]:
+                                pat_values[key].append(int(((intersecting_point - selected_rPeak) / self.fs) * 1000))
+                            else:
+                                pat_values[key].append(0)
+                        except:
+                            pat_values[key].append(0)
+                    else:
+                        if not np.isnan(ref_pts[key]):
+                            pat_values[key].append(int(((ref_pts[key] - selected_rPeak) / self.fs) * 1000))
+                        else:
+                            pat_values[key].append(0)
+        for key, values in pat_values.items():
+            if key == "u" or key == "it":
+                no_zeros = (pat_values[key] != 0)
+                pat_values[key] = pat_values[key][no_zeros]
+                tmp = np.where(pat_values[key] > (np.mean(pat_values[key]) + 0.25 * np.mean(pat_values[key])))[0]
+                values = np.array(values)
+                values[tmp] = 0
+                pat_values[key] = values
+            np.save(self.target_path + f"ExtractedPAT/{key.capitalize()}/" + self.id[:10], values)
 
     """
     Extraction of the different feature subsets
-    - AF: all features
-    - RF: features derived only from the reconstructed beat
-    - OF: features derived only from the original beat
-    - KF: features derived only from the kernels of the beat
     """
     def feature_extraction(self):
         """
-
+        Extraction of the different feature subsets
+        - AF: all features
+        - RF: features derived only from the reconstructed beat
+        - OF: features derived only from the original beat
+        - KF: features derived only from the kernels of the beat
         :return:
         """
         self.ids = os.listdir(self.target_path + "SelectedData/")
