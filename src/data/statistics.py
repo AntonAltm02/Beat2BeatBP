@@ -27,11 +27,15 @@ def plot_PAT(path_main, sub_files, pat_type):
     for pat_type in pat_type:
         for file in sub_files:
             sbp, dbp, pat = load_data(path_main, file[:10], pat_type)
-            plt.figure()
-            plt.plot(pat)
-            plt.xlabel("Samples")
-            plt.ylabel("PAT in ms")
-            plt.title(f"PAT of subject {file[:10]}")
+
+            fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True, sharey=False)
+            ax1.plot(pat)
+            ax1.set(xlabel='Samples (a.u.)', ylabel='PAT')
+            ax2.plot(sbp)
+            ax2.set(xlabel='Samples (a.u.)', ylabel='SBP')
+            ax3.plot(dbp)
+            ax3.set(xlabel='Samples (a.u.)', ylabel='DBP')
+            plt.title(f"PAT, SBP and DBP - subject {file[:10]}")
             plt.show()
 
 def calculate_mean_std_PAT(path_main, sub_files, pat_type):
