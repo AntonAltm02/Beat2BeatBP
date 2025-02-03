@@ -4,6 +4,8 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('TkAgg')
+import pandas as pd
+import seaborn as sns
 
 
 def load_data(path_main, file, pat_type):
@@ -16,7 +18,7 @@ def load_data(path_main, file, pat_type):
     pat = pat[no_zeros]
     return sbp, dbp, pat
 
-def plot_PAT(path_main, sub_files, pat_type):
+def plot_PAT_BP(path_main, sub_files, pat_type):
     """
     Plot the extracted PAT of one selected subject
     :param path_main: processed, extracted PAT
@@ -30,12 +32,12 @@ def plot_PAT(path_main, sub_files, pat_type):
 
             fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True, sharey=False)
             ax1.plot(pat)
-            ax1.set(xlabel='Samples (a.u.)', ylabel='PAT')
+            ax1.set(xlabel='Samples (a.u.)', ylabel='PAT (ms)')
             ax2.plot(sbp)
-            ax2.set(xlabel='Samples (a.u.)', ylabel='SBP')
+            ax2.set(xlabel='Samples (a.u.)', ylabel='SBP (mmHg)')
             ax3.plot(dbp)
-            ax3.set(xlabel='Samples (a.u.)', ylabel='DBP')
-            plt.title(f"PAT, SBP and DBP - subject {file[:10]}")
+            ax3.set(xlabel='Samples (a.u.)', ylabel='DBP (mmHg)')
+            fig.suptitle(f"PAT, SBP and DBP - subject {file[:10]}")
             plt.show()
 
 def calculate_mean_std_PAT(path_main, sub_files, pat_type):
@@ -86,45 +88,25 @@ def plot_BP_PAT_BoxPlot(path_main, sub_files, pat_type):
         "r_pat_dp": [],
     }
     for file in sub_files:
-        for pat_type in pat_type:
-            sbp, dbp, pat = load_data(path_main, file, pat_type)
-            r_spearman_sbp[f"r_pat_{pat_type.lower()}"] = scipy.stats.spearmanr(pat, sbp)[0]
-            r_spearman_dbp[f"r_pat_{pat_type.lower()}"] = scipy.stats.spearmanr(pat, dbp)[0]
+        for i in pat_type:
+            sbp, dbp, pat = load_data(path_main, file[:10], i)
+            r_spearman_sbp[f"r_pat_{i.lower()}"].append(scipy.stats.spearmanr(pat, sbp)[0])
+            r_spearman_dbp[f"r_pat_{i.lower()}"].append(scipy.stats.spearmanr(pat, dbp)[0])
 
-    # Boxplot properties
-    boxprops = {"facecolor": "lightblue", "edgecolor": "black"}
-    whiskerprops = {"color": "black"}
-    capprops = {"color": "black"}
-    medianprops = {"color": "red"}
+    df_dbp = pd.DataFrame([(k, v) for k, values in r_spearman_dbp.items() for v in values],
+                      columns=['PAT Type', 'Spearman Correlation DBP'])
+    df_sbp = pd.DataFrame([(k, v) for k, values in r_spearman_sbp.items() for v in values],
+                          columns=['PAT Type', 'Spearman Correlation SBP'])
 
-    fig, ax = plt.subplots(1, 2, figsize=(15, 10), dpi=100)
-    # First subplot: SBP
-    ax[0].boxplot(r_sbp_all.T,  # Transpose to get 15 datasets (columns)
-                  patch_artist=True,
-                  boxprops=boxprops, whiskerprops=whiskerprops,
-                  capprops=capprops, medianprops=medianprops)
-    ax[0].set_xticks(range(1, 16))  # 1 to 15
-    ax[0].set_xticklabels(["on", "sp", "dn", "dp", "u", "v", "w", "a", "b", "c", "d", "e", "f", "p1", "p2"],
-                          fontsize=14, rotation=45, fontweight='bold')
-    ax[0].set_ylabel('Correlation Coefficient', fontsize=16, fontweight='bold')
-    ax[0].tick_params(axis='y', labelsize=12)
-    ax[0].set_title('Correlation with SBP', fontsize=18)
-
-    # Second subplot: DBP
-    ax[1].boxplot(r_dbp_all.T,  # Transpose to get 15 datasets (columns)
-                  patch_artist=True,
-                  boxprops=boxprops, whiskerprops=whiskerprops,
-                  capprops=capprops, medianprops=medianprops)
-    ax[1].set_xticks(range(1, 16))  # 1 to 15
-    ax[1].set_xticklabels(["on", "sp", "dn", "dp", "u", "v", "w", "a", "b", "c", "d", "e", "f", "p1", "p2"],
-                          fontsize=14, rotation=45, fontweight='bold')
-    ax[1].set_ylabel('Correlation Coefficient', fontsize=16, fontweight='bold')
-    ax[1].tick_params(axis='y', labelsize=12)
-    ax[1].set_title('Correlation with DBP', fontsize=18)
-
-    # Adjust layout
+    fig, axes = plt.subplots(1, 2, figsize=(12, 6), sharey=True)
+    sns.boxplot(x="PAT Type", y="Spearman Correlation DBP", data=df_dbp, ax=axes[0])
+    axes[0].set_title("Spearman Correlation between PAT types and DBP")
+    sns.boxplot(x="PAT Type", y="Spearman Correlation SBP", data=df_sbp, ax=axes[1])
+    axes[1].set_title("Spearman Correlation between PAT types and SBP")
+    custom_labels = ["ON", "IT", "U", "SP", "DN", "DP"]  # Replace with your desired names
+    axes[0].set_xticks(ticks=range(len(custom_labels)), labels=custom_labels, rotation=45)
+    axes[1].set_xticks(ticks=range(len(custom_labels)), labels=custom_labels, rotation=45)
     plt.tight_layout()
-    # plt.savefig("Plots/MIMIC_R_Box.pdf", format="pdf")
     plt.show()
 
 def calculate_corr_BP_PAT(path_main, sub_files, pat_type):
