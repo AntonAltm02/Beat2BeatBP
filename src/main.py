@@ -27,4 +27,5 @@ if __name__ == "__main__":
     stats.plot_PAT(path_main=path_main, sub_files=files, pat_type=["IT"])
     stats.calculate_corr_BP_PAT(path_main=path_main, sub_files=files, pat_type=["ON", "SP", "DN", "DP", "IT", "U"])
     stats.calculate_mean_std_PAT(path_main=path_main, sub_files=files, pat_type=["ON", "SP", "DN", "DP", "IT", "U"])
+    stats.plot_BP_PAT_BoxPlot(path_main=path_main, sub_files=files, pat_type=["ON", "SP", "DN", "DP", "IT", "U"])
     print("Stop here")

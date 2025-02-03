@@ -65,6 +65,68 @@ def calculate_mean_std_PAT(path_main, sub_files, pat_type):
 
         print(f"Subject-wise metrics of PAT({pat_type}) - Mean: {np.round(np.mean(mean), 2)} and SD: {np.round(np.mean(np.std(std)), 2)}")
 
+def plot_BP_PAT_BoxPlot(path_main, sub_files, pat_type):
+    """
+    Plot the Pearson correlation between the PAT and BP as Boxplot across all PAT and BP types
+    """
+    r_spearman_sbp = {
+        "r_pat_on": [],
+        "r_pat_it": [],
+        "r_pat_u": [],
+        "r_pat_sp": [],
+        "r_pat_dn": [],
+        "r_pat_dp": [],
+    }
+    r_spearman_dbp = {
+        "r_pat_on": [],
+        "r_pat_it": [],
+        "r_pat_u": [],
+        "r_pat_sp": [],
+        "r_pat_dn": [],
+        "r_pat_dp": [],
+    }
+    for file in sub_files:
+        for pat_type in pat_type:
+            sbp, dbp, pat = load_data(path_main, file, pat_type)
+            r_spearman_sbp[f"r_pat_{pat_type.lower()}"] = scipy.stats.spearmanr(pat, sbp)[0]
+            r_spearman_dbp[f"r_pat_{pat_type.lower()}"] = scipy.stats.spearmanr(pat, dbp)[0]
+
+    # Boxplot properties
+    boxprops = {"facecolor": "lightblue", "edgecolor": "black"}
+    whiskerprops = {"color": "black"}
+    capprops = {"color": "black"}
+    medianprops = {"color": "red"}
+
+    fig, ax = plt.subplots(1, 2, figsize=(15, 10), dpi=100)
+    # First subplot: SBP
+    ax[0].boxplot(r_sbp_all.T,  # Transpose to get 15 datasets (columns)
+                  patch_artist=True,
+                  boxprops=boxprops, whiskerprops=whiskerprops,
+                  capprops=capprops, medianprops=medianprops)
+    ax[0].set_xticks(range(1, 16))  # 1 to 15
+    ax[0].set_xticklabels(["on", "sp", "dn", "dp", "u", "v", "w", "a", "b", "c", "d", "e", "f", "p1", "p2"],
+                          fontsize=14, rotation=45, fontweight='bold')
+    ax[0].set_ylabel('Correlation Coefficient', fontsize=16, fontweight='bold')
+    ax[0].tick_params(axis='y', labelsize=12)
+    ax[0].set_title('Correlation with SBP', fontsize=18)
+
+    # Second subplot: DBP
+    ax[1].boxplot(r_dbp_all.T,  # Transpose to get 15 datasets (columns)
+                  patch_artist=True,
+                  boxprops=boxprops, whiskerprops=whiskerprops,
+                  capprops=capprops, medianprops=medianprops)
+    ax[1].set_xticks(range(1, 16))  # 1 to 15
+    ax[1].set_xticklabels(["on", "sp", "dn", "dp", "u", "v", "w", "a", "b", "c", "d", "e", "f", "p1", "p2"],
+                          fontsize=14, rotation=45, fontweight='bold')
+    ax[1].set_ylabel('Correlation Coefficient', fontsize=16, fontweight='bold')
+    ax[1].tick_params(axis='y', labelsize=12)
+    ax[1].set_title('Correlation with DBP', fontsize=18)
+
+    # Adjust layout
+    plt.tight_layout()
+    # plt.savefig("Plots/MIMIC_R_Box.pdf", format="pdf")
+    plt.show()
+
 def calculate_corr_BP_PAT(path_main, sub_files, pat_type):
     for pat_type in pat_type:
         results = {
