@@ -18,7 +18,7 @@ def load_data(path_main, file, pat_type):
     pat = pat[no_zeros]
     return sbp, dbp, pat
 
-def plot_PAT_BP(path_main, sub_files, pat_type):
+def plot_pat_bp(path_main, sub_files, pat_type):
     """
     Plot the extracted PAT of one selected subject
     :param path_main: processed, extracted PAT
@@ -40,7 +40,7 @@ def plot_PAT_BP(path_main, sub_files, pat_type):
             fig.suptitle(f"PAT, SBP and DBP - subject {file[:10]}")
             plt.show()
 
-def calculate_mean_std_PAT(path_main, sub_files, pat_type):
+def calculate_mean_std_pat(path_main, sub_files, pat_type):
     """
 
     :param path_main:
@@ -67,7 +67,7 @@ def calculate_mean_std_PAT(path_main, sub_files, pat_type):
 
         print(f"Subject-wise metrics of PAT({pat_type}) - Mean: {np.round(np.mean(mean), 2)} and SD: {np.round(np.mean(np.std(std)), 2)}")
 
-def plot_BP_PAT_BoxPlot(path_main, sub_files, pat_type):
+def plot_bp_pat_boxplot(path_main, sub_files, pat_type):
     """
     Plot the Pearson correlation between the PAT and BP as Boxplot across all PAT and BP types
     """
@@ -109,7 +109,7 @@ def plot_BP_PAT_BoxPlot(path_main, sub_files, pat_type):
     plt.tight_layout()
     plt.show()
 
-def calculate_corr_BP_PAT(path_main, sub_files, pat_type):
+def calculate_corr_bp_pat(path_main, sub_files, pat_type):
     for pat_type in pat_type:
         results = {
             "pearson_sbp": [],
