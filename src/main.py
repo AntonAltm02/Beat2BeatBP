@@ -1,6 +1,8 @@
 from data.preprocessing import Processor
 import data.statistics as stats
 import os
+from train.train import train_basic_pat
+from sklearn.model_selection import train_test_split
 
 
 script_dir = os.path.dirname(__file__)
@@ -34,4 +36,6 @@ if __name__ == "__main__":
     Building XGBoost models to train and eval the prediction of PAT across 
     all types using the feature sets (AF, OF, RF, KF)
     """
-
+    train_files, test_files = train_test_split(files, test_size=0.2, shuffle=True, random_state=0)
+    train_basic_pat(files_train=train_files, pat_type="ON", feature_type="AF")
+    print("Stop here")
