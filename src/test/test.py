@@ -3,7 +3,7 @@ from src.load import get_data
 import os
 
 script_dir = os.path.dirname(__file__)
-model_path = os.path.join(script_dir + "/model/")
+model_path = os.path.join(script_dir + "/../model/")
 
 def test_basic_pat(files_test, pat_type, feature_type, model_name):
     print("Load Model")

@@ -20,13 +20,13 @@ def train_basic_pat(files_train, pat_type, feature_type, model_name):
     print("Data loaded \n")
 
     print("Training the model")
-    num_boost_round = 10000
+    num_boost_round = 1000
     xgb_reg = xgb.XGBRegressor(
         objective="reg:squarederror",
         eval_metric="mae",
         n_estimators=num_boost_round,
         # early_stopping_rounds=20,
-        learning_rate=0.001,
+        learning_rate=0.01,
         device="cpu",
     )
     xgb_reg.fit(features_train, target_train, eval_set=eval_set, verbose=True)
@@ -34,6 +34,6 @@ def train_basic_pat(files_train, pat_type, feature_type, model_name):
 
     print("Saving the trained model")
     script_dir = os.path.dirname(__file__)
-    model_path = os.path.join(script_dir + "/model/")
-    xgb_reg.save_model(f"{model_path}PAT/{model_name}")
+    model_path = os.path.join(script_dir + "/../model/")
+    xgb_reg.save_model(model_path + model_name)
     print("Model saved \n")
