@@ -1,8 +1,9 @@
 import sklearn
 from src.load import get_data
 import xgboost as xgb
+import os
 
-def train_basic_pat(files_train, pat_type, feature_type):
+def train_basic_pat(files_train, pat_type, feature_type, model_name):
     """
     This function trains the XGBoost models either with basic features alone, ePAT alone or even with ePAT and features
     in conjunction.
@@ -24,13 +25,15 @@ def train_basic_pat(files_train, pat_type, feature_type):
         objective="reg:squarederror",
         eval_metric="mae",
         n_estimators=num_boost_round,
-        early_stopping_rounds=20,
-        learning_rate=0.01,
+        # early_stopping_rounds=20,
+        learning_rate=0.001,
         device="cpu",
     )
     xgb_reg.fit(features_train, target_train, eval_set=eval_set, verbose=True)
     print("Training finished \n")
 
     print("Saving the trained model")
-    # xgb_reg.save_model(f"{model_path}PAT/{model_name}")
+    script_dir = os.path.dirname(__file__)
+    model_path = os.path.join(script_dir + "/model/")
+    xgb_reg.save_model(f"{model_path}PAT/{model_name}")
     print("Model saved \n")
