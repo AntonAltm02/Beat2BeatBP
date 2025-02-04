@@ -29,3 +29,9 @@ if __name__ == "__main__":
     stats.calculate_mean_std_pat(path_main=path_main, sub_files=files, pat_type=["ON", "IT", "U", "SP", "DN", "DP"])
     stats.plot_bp_pat_boxplot(path_main=path_main, sub_files=files, pat_type=["ON", "IT", "U", "SP", "DN", "DP"])
     print("Stop here")
+
+    """
+    Building XGBoost models to train and eval the prediction of PAT across 
+    all types using the feature sets (AF, OF, RF, KF)
+    """
+
