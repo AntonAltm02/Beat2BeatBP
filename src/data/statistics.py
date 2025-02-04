@@ -6,6 +6,7 @@ import matplotlib
 matplotlib.use('TkAgg')
 import pandas as pd
 import seaborn as sns
+import os
 
 
 def load_data(path_main, file, pat_type):
@@ -176,3 +177,22 @@ def calculate_corr_bp_pat(path_main, sub_files, pat_type):
         print(f"Pearson R - Overall mean of subject-wise R between PAT({pat_type}) and DBP - Mean: {np.round(np.mean(r_pearson_dbp), 2)} and SD: {np.round(np.std(r_pearson_dbp), 2)}")
         print(f"Spearman R - Overall mean of subject-wise R between PAT({pat_type}) and SBP - Mean: {np.round(np.mean(r_spearman_sbp), 2)} and SD: {np.round(np.std(r_spearman_sbp), 2)}")
         print(f"Spearman R - Overall mean of subject-wise R between PAT({pat_type}) and DBP - Mean: {np.round(np.mean(r_spearman_dbp), 2)} and SD: {np.round(np.std(r_spearman_dbp), 2)} \n")
+
+def t_test_pat(path_main, files_train, files_test, pat_type):
+    """
+    T-Test for checking the statistical difference between PAT values of the train and test files after split
+    """
+    pat_files_train = [path_main + f"ExtractedPAT/{pat_type}/{file}" for file in files_train]
+    pat_files_test = [path_main + f"ExtractedPAT/{pat_type}/{file}" for file in files_test]
+
+    pat_md_train = np.array([np.mean(np.load(file, allow_pickle=True)) for file in pat_files_train])
+    pat_md_test = np.array([np.mean(np.load(file, allow_pickle=True)) for file in pat_files_test])
+
+    t_stat_pat, p_val_pat = scipy.stats.ttest_ind(pat_md_train, pat_md_test)
+    print(f"PAT{pat_type}-t-statistic:", t_stat_pat)
+    print(f"PAT{pat_type}-p-value:", p_val_pat)
+    alpha = 0.05
+    if p_val_pat > alpha:
+        print("Fail to reject null hypothesis: No significant difference between train and test datasets. \n")
+    else:
+        print("Reject null hypothesis: Significant difference between train and test datasets. \n")
