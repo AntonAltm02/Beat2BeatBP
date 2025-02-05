@@ -21,4 +21,4 @@ def test_basic_pat(files_test, pat_type, feature_type, model_name):
     dtest = xgb.DMatrix(features_test)
     predictions = loaded_model.predict(data=dtest)
     print("Prediction finished")
-    return predictions
+    return predictions, pat_test
