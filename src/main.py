@@ -3,6 +3,8 @@ import data.statistics as stats
 import os
 from train.train import train_basic_pat
 from sklearn.model_selection import train_test_split
+from src.evaluation.test import test_basic_pat
+import src.evaluation.eval as eval
 
 
 script_dir = os.path.dirname(__file__)
@@ -26,16 +28,24 @@ if __name__ == "__main__":
     """
     path_main = data_path + "/../data/processed/"
     files = os.listdir(os.path.join(data_path + "/../data/processed/ExtractedBP/SBP/"))
-    stats.plot_pat_bp(path_main=path_main, sub_files=files, pat_type=["ON"])
-    stats.calculate_corr_bp_pat(path_main=path_main, sub_files=files, pat_type=["ON", "IT", "U", "SP", "DN", "DP"])
-    stats.calculate_mean_std_pat(path_main=path_main, sub_files=files, pat_type=["ON", "IT", "U", "SP", "DN", "DP"])
-    stats.plot_bp_pat_boxplot(path_main=path_main, sub_files=files, pat_type=["ON", "IT", "U", "SP", "DN", "DP"])
+    show_stats = True
+    if show_stats:
+        # stats.plot_pat_bp(path_main=path_main, sub_files=files, pat_type=["ON"])
+        # stats.calculate_corr_bp_pat(path_main=path_main, sub_files=files, pat_type=["ON", "IT", "U", "SP", "DN", "DP"])
+        # stats.calculate_mean_std_pat(path_main=path_main, sub_files=files, pat_type=["ON", "IT", "U", "SP", "DN", "DP"])
+        stats.plot_bp_pat_boxplot(path_main=path_main, sub_files=files, pat_type=["ON", "IT", "U", "SP", "DN", "DP"])
     print("Stop here")
 
     """
     Building XGBoost models to train and eval the prediction of PAT across 
     all types using the feature sets (AF, OF, RF, KF)
-    """
-    train_files, test_files = train_test_split(files, test_size=0.2, shuffle=True, random_state=0)
-    train_basic_pat(files_train=train_files, pat_type="ON", feature_type="AF")
+
+    train_files, test_files = train_test_split(files, test_size=0.2, shuffle=True, random_state=10)
+    stats.t_test_pat(path_main=path_main, files_train=train_files, files_test=test_files, pat_type="ON")
+    model_name = "PAT(ON)_AF"
+    # train_basic_pat(files_train=train_files, pat_type="ON", feature_type="AF", model_name=model_name)
+    pred, ref = test_basic_pat(files_test=test_files, pat_type="ON", feature_type="AF", model_name=model_name)
+    eval.error_metrics(pred, ref)
+    eval.corr_plot(pred, ref, train_type="pat", pat_type="ON", bp_type=None)
     print("Stop here")
+    """
