@@ -429,8 +429,8 @@ class Processor:
             self.subject_data = pd.read_csv(self.target_path + "SelectedData/" + self.id)
             self.filtered_indices = np.load(self.target_path + "FilteredIndices/" + self.id[:10] + ".npy")
             self.subject_data = self.subject_data.iloc[self.filtered_indices]
-            self.sbp = self.subject_data["SBP"]
-            self.dbp = self.subject_data["DBP"]
+            self.sbp = self.subject_data["FinapresSBP"]
+            self.dbp = self.subject_data["FinapresDBP"]
             if not self.data_error:
                 np.save(self.target_path + "ExtractedBP/SBP/" + self.id[:10], self.sbp)
                 np.save(self.target_path + "ExtractedBP/DBP/" + self.id[:10], self.dbp)
@@ -460,6 +460,6 @@ class Processor:
         print("Process complete \n")
 
         print("Starting the extraction of the blood pressure (BP) label/values per subject")
-        self.replace = False
+        self.replace = True
         self.bp_extraction()
         print("Process complete \n")
