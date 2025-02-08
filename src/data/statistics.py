@@ -24,8 +24,8 @@ def plot_PAT(path_main, sub_files, pat_type):
     :param pat_type: PAT type (here: "ON", "DP", "DN", "SP", ...)
     :return:
     """
-    for pat_type in pat_type:
-        for file in sub_files:
+    for file in sub_files:
+        for pat_type in pat_type:
             sbp, dbp, pat = load_data(path_main, file[:10], pat_type)
 
             fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True, sharey=False)
