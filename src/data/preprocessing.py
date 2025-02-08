@@ -460,6 +460,6 @@ class Processor:
         print("Process complete \n")
 
         print("Starting the extraction of the blood pressure (BP) label/values per subject")
-        self.replace = True
+        self.replace = False
         self.bp_extraction()
         print("Process complete \n")
