@@ -4,6 +4,8 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('TkAgg')
+import pandas as pd
+import seaborn as sns
 
 
 def load_data(path_main, file, pat_type):
@@ -16,7 +18,7 @@ def load_data(path_main, file, pat_type):
     pat = pat[no_zeros]
     return sbp, dbp, pat
 
-def plot_pat(path_main, sub_files, pat_type):
+def plot_pat_bp(path_main, sub_files, pat_type):
     """
     Plot the extracted PAT of one selected subject
     :param path_main: processed, extracted PAT
@@ -24,19 +26,21 @@ def plot_pat(path_main, sub_files, pat_type):
     :param pat_type: PAT type (here: "ON", "DP", "DN", "SP", ...)
     :return:
     """
-    for file in sub_files:
-        for i in pat_type:
+    for i in pat_type:
+        for file in sub_files:
             sbp, dbp, pat = load_data(path_main, file[:10], i)
 
-            fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True, sharey=False)
+            fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(15, 9), sharex=True, sharey=False)
             ax1.plot(pat)
-            ax1.set(xlabel='Samples (a.u.)', ylabel=f'PAT({i})')
+            ax1.set(xlabel='Samples (a.u.)', ylabel='PAT (ms)')
             ax2.plot(sbp)
-            ax2.set(xlabel='Samples (a.u.)', ylabel='SBP')
+            ax2.set(xlabel='Samples (a.u.)', ylabel='SBP (mmHg)')
             ax3.plot(dbp)
-            ax3.set(xlabel='Samples (a.u.)', ylabel='DBP')
-            fig.suptitle(f"PAT({i}), SBP and DBP - subject {file[:10]}")
-            plt.show()
+            ax3.set(xlabel='Samples (a.u.)', ylabel='DBP (mmHg)')
+            fig.suptitle(f"PAT, SBP and DBP - subject {file[:10]}")
+            plt.savefig(path_main + "../../reports/figures/PAT_BP/" + f'{file[:10]}_{i}', format='pdf')
+            # plt.show()
+            plt.close()
 
 def calculate_mean_std_pat(path_main, sub_files, pat_type):
     """
@@ -64,6 +68,49 @@ def calculate_mean_std_pat(path_main, sub_files, pat_type):
         std = np.vstack(results["std"])
 
         print(f"Subject-wise metrics of PAT({pat_type}) - Mean: {np.round(np.mean(mean), 2)} and SD: {np.round(np.mean(np.std(std)), 2)}")
+
+def plot_bp_pat_boxplot(path_main, sub_files, pat_type):
+    """
+    Plot the Pearson correlation between the PAT and BP as Boxplot across all PAT and BP types
+    """
+    r_spearman_sbp = {
+        "r_pat_on": [],
+        "r_pat_it": [],
+        "r_pat_u": [],
+        "r_pat_sp": [],
+        "r_pat_dn": [],
+        "r_pat_dp": [],
+    }
+    r_spearman_dbp = {
+        "r_pat_on": [],
+        "r_pat_it": [],
+        "r_pat_u": [],
+        "r_pat_sp": [],
+        "r_pat_dn": [],
+        "r_pat_dp": [],
+    }
+    for file in tqdm(sub_files, desc="Calculating the Spearman Correlation per subject"):
+        for i in pat_type:
+            sbp, dbp, pat = load_data(path_main, file[:10], i)
+            r_spearman_sbp[f"r_pat_{i.lower()}"].append(scipy.stats.spearmanr(pat, sbp)[0])
+            r_spearman_dbp[f"r_pat_{i.lower()}"].append(scipy.stats.spearmanr(pat, dbp)[0])
+
+    df_dbp = pd.DataFrame([(k, v) for k, values in r_spearman_dbp.items() for v in values],
+                      columns=['PAT Type', 'Spearman Correlation DBP'])
+    df_sbp = pd.DataFrame([(k, v) for k, values in r_spearman_sbp.items() for v in values],
+                          columns=['PAT Type', 'Spearman Correlation SBP'])
+
+    fig, axes = plt.subplots(1, 2, figsize=(12, 6), sharey=True)
+    sns.boxplot(x="PAT Type", y="Spearman Correlation BP", data=df_dbp, ax=axes[0])
+    axes[0].set_title("Spearman Correlation between PAT types and DBP")
+    sns.boxplot(x="PAT Type", y="Spearman Correlation SBP", data=df_sbp, ax=axes[1])
+    axes[1].set_title("Spearman Correlation between PAT types and SBP")
+    custom_labels = ["ON", "IT", "U", "SP", "DN", "DP"]  # Replace with your desired names
+    axes[0].set_xticks(ticks=range(len(custom_labels)), labels=custom_labels, rotation=45)
+    axes[1].set_xticks(ticks=range(len(custom_labels)), labels=custom_labels, rotation=45)
+    plt.tight_layout()
+    plt.savefig(path_main + "../../reports/figures/R_BoxPlot/" + f'Spearman_Correlation', format='pdf')
+    plt.show()
 
 def calculate_corr_bp_pat(path_main, sub_files, pat_type):
     for pat_type in pat_type:
