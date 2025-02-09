@@ -16,7 +16,7 @@ def load_data(path_main, file, pat_type):
     pat = pat[no_zeros]
     return sbp, dbp, pat
 
-def plot_PAT(path_main, sub_files, pat_type):
+def plot_pat(path_main, sub_files, pat_type):
     """
     Plot the extracted PAT of one selected subject
     :param path_main: processed, extracted PAT
@@ -25,20 +25,20 @@ def plot_PAT(path_main, sub_files, pat_type):
     :return:
     """
     for file in sub_files:
-        for pat_type in pat_type:
-            sbp, dbp, pat = load_data(path_main, file[:10], pat_type)
+        for i in pat_type:
+            sbp, dbp, pat = load_data(path_main, file[:10], i)
 
             fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True, sharey=False)
             ax1.plot(pat)
-            ax1.set(xlabel='Samples (a.u.)', ylabel='PAT')
+            ax1.set(xlabel='Samples (a.u.)', ylabel=f'PAT({i})')
             ax2.plot(sbp)
             ax2.set(xlabel='Samples (a.u.)', ylabel='SBP')
             ax3.plot(dbp)
             ax3.set(xlabel='Samples (a.u.)', ylabel='DBP')
-            plt.title(f"PAT, SBP and DBP - subject {file[:10]}")
+            fig.suptitle(f"PAT({i}), SBP and DBP - subject {file[:10]}")
             plt.show()
 
-def calculate_mean_std_PAT(path_main, sub_files, pat_type):
+def calculate_mean_std_pat(path_main, sub_files, pat_type):
     """
 
     :param path_main:
@@ -65,7 +65,7 @@ def calculate_mean_std_PAT(path_main, sub_files, pat_type):
 
         print(f"Subject-wise metrics of PAT({pat_type}) - Mean: {np.round(np.mean(mean), 2)} and SD: {np.round(np.mean(np.std(std)), 2)}")
 
-def calculate_corr_BP_PAT(path_main, sub_files, pat_type):
+def calculate_corr_bp_pat(path_main, sub_files, pat_type):
     for pat_type in pat_type:
         results = {
             "pearson_sbp": [],
