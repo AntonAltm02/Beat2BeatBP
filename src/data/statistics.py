@@ -109,15 +109,21 @@ def plot_bp_pat_boxplot(path_main, sub_files, pat_type):
             r_spearman_sbp[f"r_pat_{i.lower()}"].append(scipy.stats.spearmanr(pat, sbp)[0])
             r_spearman_dbp[f"r_pat_{i.lower()}"].append(scipy.stats.spearmanr(pat, dbp)[0])
 
-    df_dbp = pd.DataFrame([(k, v) for k, values in r_spearman_dbp.items() for v in values],
-                      columns=['PAT Type', 'Spearman Correlation DBP'])
-    df_sbp = pd.DataFrame([(k, v) for k, values in r_spearman_sbp.items() for v in values],
-                          columns=['PAT Type', 'Spearman Correlation SBP'])
+    # df_dbp = pd.DataFrame([(k, v) for k, values in r_spearman_dbp.items() for v in values],
+    #                   columns=['PAT Type', 'Spearman Correlation DBP'])
+    df_dbp = []
+    for i, values in r_spearman_dbp.items():
+        df_dbp.append(values)
+    df_dbp = pd.DataFrame(df_dbp).transpose()
+    df_sbp = []
+    for i, values in r_spearman_sbp.items():
+        df_sbp.append(values)
+    df_sbp = pd.DataFrame(df_sbp).transpose()
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 6), sharey=True)
-    sns.boxplot(x="PAT Type", y="Spearman Correlation BP", data=df_dbp, ax=axes[0])
+    sns.boxplot(data=df_dbp, ax=axes[0])
     axes[0].set_title("Spearman Correlation between PAT types and DBP")
-    sns.boxplot(x="PAT Type", y="Spearman Correlation SBP", data=df_sbp, ax=axes[1])
+    sns.boxplot(data=df_sbp, ax=axes[1])
     axes[1].set_title("Spearman Correlation between PAT types and SBP")
     custom_labels = ["ON", "IT", "U", "SP", "DN", "DP"]  # Replace with your desired names
     axes[0].set_xticks(ticks=range(len(custom_labels)), labels=custom_labels, rotation=45)
