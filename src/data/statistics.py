@@ -18,7 +18,7 @@ def load_data(path_main, file, pat_type):
     pat = pat[no_zeros]
     return sbp, dbp, pat
 
-def plot_pat_bp(path_main, sub_files, pat_type):
+def plot_pat(path_main, sub_files, pat_type):
     """
     Plot the extracted PAT of one selected subject
     :param path_main: processed, extracted PAT
@@ -26,21 +26,35 @@ def plot_pat_bp(path_main, sub_files, pat_type):
     :param pat_type: PAT type (here: "ON", "DP", "DN", "SP", ...)
     :return:
     """
-    for i in pat_type:
-        for file in sub_files:
-            sbp, dbp, pat = load_data(path_main, file[:10], i)
+    for file in sub_files:
+        pat_list = {
+            "on": [],
+            "sp": [],
+            "dn": [],
+            "dp": [],
+            "u": [],
+            "it": []
+        }
+        for key, _ in pat_list.items():
+            sbp, dbp, pat = load_data(path_main, file[:10], key.upper())
+            pat_list[key].append(pat)
+            # Spearman Correlation SBP-PAT
+            pat_list[key].append(np.round(scipy.stats.spearmanr(pat, sbp)[0], 2))
+            # Spearman Correlation DBP-PAT
+            pat_list[key].append(np.round(scipy.stats.spearmanr(pat, dbp)[0], 2))
 
-            fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(15, 9), sharex=True, sharey=False)
-            ax1.plot(pat)
-            ax1.set(xlabel='Samples (a.u.)', ylabel='PAT (ms)')
-            ax2.plot(sbp)
-            ax2.set(xlabel='Samples (a.u.)', ylabel='SBP (mmHg)')
-            ax3.plot(dbp)
-            ax3.set(xlabel='Samples (a.u.)', ylabel='DBP (mmHg)')
-            fig.suptitle(f"PAT, SBP and DBP - subject {file[:10]}")
-            plt.savefig(path_main + "../../reports/figures/PAT_BP/" + f'{file[:10]}_{i}', format='pdf')
-            # plt.show()
-            plt.close()
+        fig, axes = plt.subplots(3, 2, figsize=(15, 9), sharex=True, sharey=False)
+        axes = axes.flatten()
+        for (key, _), (_, ax) in zip(pat_list.items(), enumerate(axes)):
+            ax.plot(pat_list[key][0])
+            ax.set(xlabel='Samples (a.u.)', ylabel=f'PAT({key.upper()}) (ms)')
+            ax.set_title(f"DBP_PAT({key.upper()}): ρ = {pat_list[key][2]}, SBP_PAT({key.upper()}): ρ = {pat_list[key][1]}",
+                         fontsize=12)
+        plt.tight_layout(pad=3.0)  # Increase padding between plots
+        fig.suptitle(f"PAT - {file[:10]}")
+        plt.savefig(path_main + f"../../reports/figures/PAT_BP/" + f'{file[:10]}.pdf', format='pdf')
+        # plt.show()
+        plt.close()
 
 def calculate_mean_std_pat(path_main, sub_files, pat_type):
     """
