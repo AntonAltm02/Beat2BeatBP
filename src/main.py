@@ -24,8 +24,8 @@ if __name__ == "__main__":
     """
     path_main = data_path + "/../data/processed/"
     files = os.listdir(os.path.join(data_path + "/../data/processed/ExtractedBP/SBP/"))
-    stats.plot_pat_bp(path_main=path_main, sub_files=files, pat_type=["ON"])
+    stats.plot_pat(path_main=path_main, sub_files=files, pat_type=["ON"])
     stats.calculate_corr_bp_pat(path_main=path_main, sub_files=files, pat_type=["ON", "IT", "U", "SP", "DN", "DP"])
     stats.calculate_mean_std_pat(path_main=path_main, sub_files=files, pat_type=["ON", "IT", "U", "SP", "DN", "DP"])
-    stats.plot_bp_pat_boxplot(path_main=path_main, sub_files=files, pat_type=["ON", "IT", "U", "SP", "DN", "DP"])
+    # stats.plot_bp_pat_boxplot(path_main=path_main, sub_files=files, pat_type=["ON", "IT", "U", "SP", "DN", "DP"])
     print("Stop here")

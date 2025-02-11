@@ -47,7 +47,7 @@ class Processor:
         self.subject_indices = None
         self.filtered_indices = None
 
-        self.fiducial_points = None
+        self.fiducials = None
         self.detection_points = None
         self.ppg_segment = None
         self.ecg_segment = None
@@ -247,8 +247,8 @@ class Processor:
         for self.id in tqdm(self.ids, desc="Extracting the PPG fiducial points of each subject"):
             self.load_mat_data()
             if not self.data_error:
-                self.fiducial_points = self.extract_fiducial_points()
-                self.fiducial_points.to_csv(self.target_path + f"FiducialPoints/" + self.id, index=False)
+                self.fiducials = self.extract_fiducial_points()
+                self.fiducials.to_csv(self.target_path + f"FiducialPoints/" + self.id, index=False)
             else:
                 self.error_handling(self.id)
                 self.data_error = False
@@ -269,10 +269,9 @@ class Processor:
             # loads the PPG and ECG segments
             self.load_mat_data()
             if not self.data_error:
-                features = pd.read_csv(self.target_path + "SelectedData/" + self.id)
-                self.subject_indices = np.array(features.index.array)
-                self.detection_points = np.array(features["detectionPoint"])
-                self.fiducial_points = pd.read_csv(self.target_path + "FiducialPoints/" + self.id)
+                # loading the features and extracting the detection points per subject
+                self.detection_points = (pd.read_csv(self.target_path + "SelectedData/" + self.id)["detectionPoint"])
+                self.fiducials = pd.read_csv(self.target_path + "FiducialPoints/" + self.id)
 
                 self.retrieve_PAT()
                 np.save(self.target_path + "FilteredIndices/" + self.id[:10], self.filtered_indices)
@@ -282,25 +281,7 @@ class Processor:
 
     def retrieve_PAT(self):
         """
-        Fiducial points data frame contains 15 columns with points per beat:
-        - "on": the onset of the PPG beat
-        - "sp": the systolic peak of the PPG beat
-        - "dn": the dicrotic notch of the PPG beat
-        - "dp": the diastolic peak of the PPG beat
-
-        - "u": point in PPG' beat
-        - "v": point in PPG' beat
-        - "w": point in PPG' beat
-
-        - "a": point in PPG'' beat
-        - "b": point in PPG'' beat
-        - "c": point in PPG'' beat
-        - "d": point in PPG'' beat
-        - "e": point in PPG'' beat
-        - "f": point in PPG'' beat
-
-        - "p1": point in PPG''' beat
-        - "p2": point in PPG''' beat
+        Fiducial points data frame contains 15 columns with points per beat
         reference: https://pyppg.readthedocs.io/en/latest/tutorials/pyPPG_example.html
         :return:
         """
@@ -309,17 +290,21 @@ class Processor:
 
             :return:
             """
-            tmp = []
+            tmp = {
+                "idx": [],
+                "onset": []
+            }
             for detection_point in self.detection_points:
-                for fiducial_onsets in self.fiducial_points["on"]:
-                    if (fiducial_onsets >= detection_point - 10) and (fiducial_onsets >= detection_point + 10):
-                        tmp.append(detection_point)
+                for idx, fiducial_onsets in enumerate(self.fiducials["on"]):
+                    if (fiducial_onsets >= detection_point - 10) and (fiducial_onsets <= detection_point + 10):
+                        tmp["idx"].append(idx)
+                        tmp["onset"].append(detection_point)
                         break
-            return np.array(tmp)
-        filtered_detection_points = get_filtered_detection_points()
+            return tmp["idx"], tmp["onset"]
+        indices, filtered_detection_points = get_filtered_detection_points()
         # the indices of the filtered detection points need to be matched to the vanilla indices of detection points
         self.filtered_indices = np.where(np.isin(filtered_detection_points, self.detection_points))[0]
-        reference_points = self.fiducial_points.loc[self.filtered_indices]
+        reference_points = self.fiducials.loc[indices]
         rPeaks = get_r_peaks(fs=self.fs, ecg_signal=self.ecg_segment)
 
         pat_values = {

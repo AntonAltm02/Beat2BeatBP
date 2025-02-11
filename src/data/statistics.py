@@ -26,14 +26,14 @@ def plot_pat(path_main, sub_files, pat_type):
     :param pat_type: PAT type (here: "ON", "DP", "DN", "SP", ...)
     :return:
     """
-    for file in sub_files:
+    for file in tqdm(sub_files, desc="Plotting PATs and Spearman Correlation with BP"):
         pat_list = {
             "on": [],
+            "u": [],
+            "it": [],
             "sp": [],
             "dn": [],
             "dp": [],
-            "u": [],
-            "it": []
         }
         for key, _ in pat_list.items():
             sbp, dbp, pat = load_data(path_main, file[:10], key.upper())
@@ -53,8 +53,8 @@ def plot_pat(path_main, sub_files, pat_type):
         plt.tight_layout(pad=3.0)  # Increase padding between plots
         fig.suptitle(f"PAT - {file[:10]}")
         plt.savefig(path_main + f"../../reports/figures/PAT_BP/" + f'{file[:10]}.pdf', format='pdf')
-        # plt.show()
-        plt.close()
+        plt.show()
+        # plt.close()
 
 def calculate_mean_std_pat(path_main, sub_files, pat_type):
     """
