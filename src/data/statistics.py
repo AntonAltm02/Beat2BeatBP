@@ -18,19 +18,18 @@ def load_data(path_main, file, pat_type):
     pat = pat[no_zeros]
     return sbp, dbp, pat
 
-def plot_pat(path_main, sub_files, pat_type):
+def plot_pat(path_main, sub_files):
     """
     Plot the extracted PAT of one selected subject
     :param path_main: processed, extracted PAT
     :param sub_files: selected subject file
-    :param pat_type: PAT type (here: "ON", "DP", "DN", "SP", ...)
     :return:
     """
     for file in tqdm(sub_files, desc="Plotting PATs and Spearman Correlation with BP"):
         pat_list = {
             "on": [],
-            "u": [],
             "it": [],
+            "u": [],
             "sp": [],
             "dn": [],
             "dp": [],
@@ -54,7 +53,7 @@ def plot_pat(path_main, sub_files, pat_type):
         fig.suptitle(f"PAT - {file[:10]}")
         plt.savefig(path_main + f"../../reports/figures/PAT_BP/" + f'{file[:10]}.pdf', format='pdf')
         plt.show()
-        # plt.close()
+        plt.close()
 
 def calculate_mean_std_pat(path_main, sub_files, pat_type):
     """
@@ -129,7 +128,7 @@ def plot_bp_pat_boxplot(path_main, sub_files, pat_type):
     axes[0].set_xticks(ticks=range(len(custom_labels)), labels=custom_labels, rotation=45)
     axes[1].set_xticks(ticks=range(len(custom_labels)), labels=custom_labels, rotation=45)
     plt.tight_layout()
-    plt.savefig(path_main + "../../reports/figures/R_BoxPlot/" + f'Spearman_Correlation', format='pdf')
+    plt.savefig(path_main + "../../reports/figures/R_BoxPlot/" + f'Spearman_Correlation.pdf', format='pdf')
     plt.show()
 
 def calculate_corr_bp_pat(path_main, sub_files, pat_type):
