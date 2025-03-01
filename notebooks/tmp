@@ -1,0 +1,65 @@
+----- Code to Check Mismatch between the Vanilla Detection Points and Fiducials
+
+import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use("TkAgg")
+
+plt.figure()
+plt.plot(self.ppg_segment)
+plt.plot(self.detection_points, self.ppg_segment[self.detection_points], "ro")
+plt.plot(reference_points["on"], self.ppg_segment[reference_points["on"]], "bo")
+plt.show()
+
+-------
+
+import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use("TkAgg")
+
+plt.figure()
+plt.plot(pat_array)
+plt.plot(values)
+plt.show()
+
+----------
+
+plt.figure()
+plt.plot(min_max_norm(self.ppg_segment))
+plt.plot(min_max_norm(vpg))
+plt.plot(np.array(ref_pts).astype(int)[0:4], min_max_norm(self.ppg_segment)[np.array(ref_pts).astype(int)[0:4]], "bo")
+plt.plot(np.array(ref_pts).astype(int)[4], min_max_norm(vpg)[np.array(ref_pts).astype(int)[4]], "go")
+plt.plot(min_max_norm(self.ecg_segment))
+plt.plot(selected_rPeak, min_max_norm(self.ecg_segment)[selected_rPeak], "ro")
+plt.xlim(selected_rPeak-10, np.array(ref_pts)[3].astype(int)+10)
+plt.show()
+
+------------
+
+if key == "dn" or key == "dp" or key == "u" or key == "it":
+    if int(((ref_pts[key] - selected_rPeak) / self.fs) * 1000) >= 800:
+        plt.figure()
+        plt.plot(min_max_norm(self.ppg_segment))
+        plt.plot(min_max_norm(self.vpg_segment))
+        plt.plot(np.array(ref_pts).astype(int)[0:4],
+                 min_max_norm(self.ppg_segment)[np.array(ref_pts).astype(int)[0:4]], "bo")
+        plt.plot(np.array(ref_pts).astype(int)[4],
+                 min_max_norm(self.vpg_segment)[np.array(ref_pts).astype(int)[4]], "go")
+        plt.plot(min_max_norm(self.ecg_segment))
+        plt.plot(selected_rPeak, min_max_norm(self.ecg_segment)[selected_rPeak], "ro")
+        plt.xlim(selected_rPeak - 100, np.array(ref_pts)[3].astype(int) + 100)
+        plt.title(f"{self.id} - PAT({key})")
+        plt.show()
+
+-------------
+
+import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use("TkAgg")
+
+plt.figure()
+plt.plot(nth_beat)
+plt.show()
+
+plt.figure()
+plt.plot(pp)
+plt.show()
