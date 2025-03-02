@@ -19,29 +19,42 @@ def load_data(path_main, file, pat_type):
     pat = pat[no_zeros]
     return sbp, dbp, pat
 
-def plot_pat_bp(path_main, sub_files, pat_type):
+def plot_pat(path_main, sub_files):
     """
     Plot the extracted PAT of one selected subject
     :param path_main: processed, extracted PAT
     :param sub_files: selected subject file
-    :param pat_type: PAT type (here: "ON", "DP", "DN", "SP", ...)
     :return:
     """
-    for i in pat_type:
-        for file in sub_files:
-            sbp, dbp, pat = load_data(path_main, file[:10], i)
+    for file in tqdm(sub_files, desc="Plotting PATs and Spearman Correlation with BP"):
+        pat_list = {
+            "on": [],
+            "it": [],
+            "u": [],
+            "sp": [],
+            "dn": [],
+            "dp": [],
+        }
+        for key, _ in pat_list.items():
+            sbp, dbp, pat = load_data(path_main, file[:10], key.upper())
+            pat_list[key].append(pat)
+            # Spearman Correlation SBP-PAT
+            pat_list[key].append(np.round(scipy.stats.spearmanr(pat, sbp)[0], 2))
+            # Spearman Correlation DBP-PAT
+            pat_list[key].append(np.round(scipy.stats.spearmanr(pat, dbp)[0], 2))
 
-            fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(15, 9), sharex=True, sharey=False)
-            ax1.plot(pat)
-            ax1.set(xlabel='Samples (a.u.)', ylabel='PAT (ms)')
-            ax2.plot(sbp)
-            ax2.set(xlabel='Samples (a.u.)', ylabel='SBP (mmHg)')
-            ax3.plot(dbp)
-            ax3.set(xlabel='Samples (a.u.)', ylabel='DBP (mmHg)')
-            fig.suptitle(f"PAT, SBP and DBP - subject {file[:10]}")
-            plt.savefig(path_main + "../../reports/figures/PAT_BP/" + f'{file[:10]}_{i}', format='pdf')
-            # plt.show()
-            plt.close()
+        fig, axes = plt.subplots(3, 2, figsize=(15, 9), sharex=True, sharey=False)
+        axes = axes.flatten()
+        for (key, _), (_, ax) in zip(pat_list.items(), enumerate(axes)):
+            ax.plot(pat_list[key][0])
+            ax.set(xlabel='Samples (a.u.)', ylabel=f'PAT({key.upper()}) (ms)')
+            ax.set_title(f"DBP_PAT({key.upper()}): ρ = {pat_list[key][2]}, SBP_PAT({key.upper()}): ρ = {pat_list[key][1]}",
+                         fontsize=12)
+        plt.tight_layout(pad=3.0)  # Increase padding between plots
+        fig.suptitle(f"PAT - {file[:10]}")
+        plt.savefig(path_main + f"../../reports/figures/PAT_BP/" + f'{file[:10]}.pdf', format='pdf')
+        plt.show()
+        plt.close()
 
 def calculate_mean_std_pat(path_main, sub_files, pat_type):
     """
@@ -96,21 +109,27 @@ def plot_bp_pat_boxplot(path_main, sub_files, pat_type):
             r_spearman_sbp[f"r_pat_{i.lower()}"].append(scipy.stats.spearmanr(pat, sbp)[0])
             r_spearman_dbp[f"r_pat_{i.lower()}"].append(scipy.stats.spearmanr(pat, dbp)[0])
 
-    df_dbp = pd.DataFrame([(k, v) for k, values in r_spearman_dbp.items() for v in values],
-                      columns=['PAT Type', 'Spearman Correlation DBP'])
-    df_sbp = pd.DataFrame([(k, v) for k, values in r_spearman_sbp.items() for v in values],
-                          columns=['PAT Type', 'Spearman Correlation SBP'])
+    # df_dbp = pd.DataFrame([(k, v) for k, values in r_spearman_dbp.items() for v in values],
+    #                   columns=['PAT Type', 'Spearman Correlation DBP'])
+    df_dbp = []
+    for i, values in r_spearman_dbp.items():
+        df_dbp.append(values)
+    df_dbp = pd.DataFrame(df_dbp).transpose()
+    df_sbp = []
+    for i, values in r_spearman_sbp.items():
+        df_sbp.append(values)
+    df_sbp = pd.DataFrame(df_sbp).transpose()
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 6), sharey=True)
-    sns.boxplot(x="PAT Type", y="Spearman Correlation BP", data=df_dbp, ax=axes[0])
+    sns.boxplot(data=df_dbp, ax=axes[0])
     axes[0].set_title("Spearman Correlation between PAT types and DBP")
-    sns.boxplot(x="PAT Type", y="Spearman Correlation SBP", data=df_sbp, ax=axes[1])
+    sns.boxplot(data=df_sbp, ax=axes[1])
     axes[1].set_title("Spearman Correlation between PAT types and SBP")
     custom_labels = ["ON", "IT", "U", "SP", "DN", "DP"]  # Replace with your desired names
     axes[0].set_xticks(ticks=range(len(custom_labels)), labels=custom_labels, rotation=45)
     axes[1].set_xticks(ticks=range(len(custom_labels)), labels=custom_labels, rotation=45)
     plt.tight_layout()
-    plt.savefig(path_main + "../../reports/figures/R_BoxPlot/" + f'Spearman_Correlation', format='pdf')
+    plt.savefig(path_main + "../../reports/figures/R_BoxPlot/" + f'Spearman_Correlation.pdf', format='pdf')
     plt.show()
 
 def calculate_corr_bp_pat(path_main, sub_files, pat_type):
