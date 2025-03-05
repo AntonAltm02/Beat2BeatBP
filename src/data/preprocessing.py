@@ -9,6 +9,7 @@ import pyPPG.preproc as PP
 from biosppy import signals
 import pyPPG.fiducials as FP
 from pyPPG import PPG, Fiducials
+import pyPPG.ppg_sqi as SQI
 import matplotlib.pyplot as plt
 matplotlib.use('TkAgg')
 
@@ -195,7 +196,12 @@ class Processor:
         fpex = FP.FpCollection(s=s)
         # extracting the fiducials
         fiducials = fpex.get_fiducials(s=s)
-        return fiducials
+
+        fp = Fiducials(fp=fiducials)
+        ppgSQI = round(np.mean(SQI.get_ppgSQI(ppg=signal.filt_ppg, fs=signal.fs, annotation=fp.sp)) * 100, 2)
+        print(f"Mean PPG SQI - {self.id[:10]}: ", ppgSQI, '%')
+
+        fiducials.to_csv(self.target_path + f"FiducialPoints/" + self.id, index=False)
 
     def fiducial_points_plotter(self):
         """
@@ -234,11 +240,11 @@ class Processor:
         if not self.replace:
             id_ready = os.listdir(self.target_path + "FiducialPoints/")
             self.ids = [x for x in self.ids if x[:10] + '.csv' not in id_ready]
+        # self.ids = ["subject014.csv"]
         for self.id in tqdm(self.ids, desc="Extracting the PPG fiducial points of each subject"):
             self.load_mat_data()
             if not self.data_error:
-                self.fiducials = self.extract_fiducial_points()
-                self.fiducials.to_csv(self.target_path + f"FiducialPoints/" + self.id, index=False)
+                self.extract_fiducial_points()
             else:
                 self.error_handling(self.id)
                 self.data_error = False
@@ -255,6 +261,7 @@ class Processor:
         if not self.replace:
             id_ready = os.listdir(self.target_path + "ExtractedPAT/ON/")
             self.ids = [x for x in self.ids if x[:10] + '.npy' not in id_ready]
+        # self.ids = ["subject001.csv"]
         for self.id in tqdm(self.ids, desc="Extracting the PAT"):
             # loads the PPG and ECG segments
             self.load_mat_data()
@@ -439,7 +446,7 @@ class Processor:
         print("Process complete \n")
 
         print("Starting the process of calculation and extraction of PAT")
-        self.replace = False
+        self.replace = True
         self.pat_extraction()
         print("Process complete \n")
 
