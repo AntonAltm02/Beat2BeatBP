@@ -1,10 +1,11 @@
 from data.preprocessing import Processor
 import data.statistics as stats
 import os
-from train.train import train_basic_pat
+from train.train import train_basic_pat, train_basic_bp
 from sklearn.model_selection import train_test_split
-from src.evaluation.test import test_basic_pat
+from src.evaluation.test import test_basic_pat, test_basic_bp
 import src.evaluation.eval as eval
+from src.load import get_data, get_data_frame, process
 
 
 script_dir = os.path.dirname(__file__)
@@ -30,22 +31,67 @@ if __name__ == "__main__":
     files = os.listdir(os.path.join(data_path + "/../data/processed/ExtractedBP/SBP/"))
     show_stats = True
     if show_stats:
-        stats.plot_pat(path_main=path_main, sub_files=files)
+        stats.plot_pat_bp(path_main=path_main, sub_files=files)
         stats.calculate_corr_bp_pat(path_main=path_main, sub_files=files, pat_type=["ON", "IT", "U", "SP", "DN", "DP"])
         stats.calculate_mean_std_pat(path_main=path_main, sub_files=files, pat_type=["ON", "IT", "U", "SP", "DN", "DP"])
         stats.plot_bp_pat_boxplot(path_main=path_main, sub_files=files, pat_type=["ON", "IT", "U", "SP", "DN", "DP"])
-    print("Stop here")
 
     """
     Building XGBoost models to train and eval the prediction of PAT across 
     all types using the feature sets (AF, OF, RF, KF)
-
-    train_files, test_files = train_test_split(files, test_size=0.2, shuffle=True, random_state=10)
-    stats.t_test_pat(path_main=path_main, files_train=train_files, files_test=test_files, pat_type="ON")
-    model_name = "PAT(ON)_AF"
-    # train_basic_pat(files_train=train_files, pat_type="ON", feature_type="AF", model_name=model_name)
-    pred, ref = test_basic_pat(files_test=test_files, pat_type="ON", feature_type="AF", model_name=model_name)
-    eval.error_metrics(pred, ref)
-    eval.corr_plot(pred, ref, train_type="pat", pat_type="ON", bp_type=None)
-    print("Stop here")
     """
+    eval_pat = False
+    if eval_pat:
+        pat_type = "DN"
+        feature_type = "AF"
+
+        # Conducting statistical tests to have balanced splits of train and test data
+        fixed_state = 5
+        conduct_test = False
+        if conduct_test:
+            for state in range(100):
+                train_files, test_files = train_test_split(files, test_size=0.3, random_state=state)
+                # !!!! Here it needs to be refined
+                fixed_state = stats.t_test_pat(files_train=train_files, files_test=test_files, pat_type=None, random_state=state)
+        train_files, test_files = train_test_split(files, test_size=0.3, random_state=fixed_state)
+        train_files, val_files = train_test_split(train_files, test_size=0.3, random_state=fixed_state)
+        features_train, features_val, features_test, target_train, target_val, target_test = process(
+            files_train=train_files, files_val=val_files, files_test=test_files)
+
+        model_name = f"PAT({pat_type})_{feature_type}"
+        train_basic_pat(files_train=train_files, pat_type=pat_type, feature_type=feature_type, model_name=model_name)
+        predictions, ref = test_basic_pat(files_test=test_files, pat_type=pat_type, feature_type=feature_type, model_name=model_name)
+        eval.error_metrics(predictions, ref)
+        eval.corr_plot(predictions, ref, train_type="pat", pat_type=pat_type, bp_type=None)
+
+    """
+    Building XGBoost models to train and eval the prediction of BP across 
+    all types using the feature sets (AF, OF, RF, KF) and the PATs (ON, IT, MD, SP, DN, DP)
+    """
+    eval_bp = True
+    if eval_bp:
+        train_type = "BP"
+        bp_type = "DBP"
+        feature_type = "ALL"
+
+        # Conducting statistical tests to have balanced splits of train and test data
+        fixed_state = 5
+        conduct_test = False
+        if conduct_test:
+            for state in range(100):
+                train_files, test_files = train_test_split(files, test_size=0.3, random_state=state)
+                fixed_state = stats.ks_test_bp(files_train=train_files, files_test=test_files, bp_type=bp_type, random_state=state)
+        train_files, test_files = train_test_split(files, test_size=0.3, random_state=fixed_state)
+        train_files, val_files = train_test_split(train_files, test_size=0.2, random_state=fixed_state)
+        features_train, features_val, features_test, target_train, target_val, target_test = process(
+            files_train=train_files, files_val=val_files, files_test=test_files)
+
+        model_name = f"{bp_type}_{feature_type}"
+        train_basic_bp(features_train=features_train, features_val=features_val, target_train=target_train,
+                       target_val=target_val, bp_type=bp_type, model_name=model_name)
+        predictions, ref = test_basic_bp(features_test=features_test, target_test=target_test, bp_type=bp_type, model_name=model_name)
+        eval.error_metrics(predictions, ref)
+        eval.corr_plot(predictions, ref, train_type=train_type, pat_type=None, bp_type=bp_type)
+        eval.plot_inference(pred=predictions, ref=ref, train_type=train_type, pat_type=None, bp_type=bp_type)
+        print("Stop here")
+
