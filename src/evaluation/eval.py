@@ -1,7 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy
-import os
+import matplotlib
+import seaborn as sns
+matplotlib.use("TkAgg")
 
 def error_metrics(pred, ref):
     """
@@ -45,4 +47,24 @@ def corr_plot(pred, ref, train_type, pat_type, bp_type):
 
     # path = os.path.join("Plots", f"Vital_{self.bp_type}_BestCase_ePATit+AF_corr_plot.pdf")
     # plt.savefig(path, format='pdf')
+    plt.show()
+
+def plot_inference(pred, ref, train_type, pat_type, bp_type):
+    plt.figure()
+    plt.plot(pred)
+    plt.plot(ref)
+    if train_type.upper() == "BP":
+        plt.legend(["Predictions", "Test Reference"])
+        plt.xlabel("Samples (a.u.)")
+        plt.ylabel("BP (mmHg)")
+        plt.title(f"Inference {bp_type.upper()}")
+    plt.show()
+
+def plot_hist(data_A, data_B):
+    fig, axes = plt.subplots(1, 2, figsize=(12, 6), sharey=True)
+    sns.histplot(data=data_A, ax=axes[0])
+    axes[0].set_title("Distribution")
+    sns.histplot(data=data_B, ax=axes[1])
+    axes[1].set_title("Distribution")
+    plt.tight_layout()
     plt.show()
