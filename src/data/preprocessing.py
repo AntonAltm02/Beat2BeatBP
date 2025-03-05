@@ -139,13 +139,13 @@ class Processor:
             delete_rows_nan = np.isnan(ppg_beat).any(axis=1)
             raw_data = raw_data[~delete_rows_nan]
             # removing data rows with SBP values higher than 250 and lower than 50 mmHg
-            delete_rows_sbp = (raw_data["SBP"] > 250) | (raw_data["SBP"] < 50)
+            delete_rows_sbp = (raw_data["FinapresSBP"] > 250) | (raw_data["FinapresSBP"] < 50)
             raw_data = raw_data[~delete_rows_sbp]
-            raw_data = raw_data.dropna(subset=["SBP"])
+            raw_data = raw_data.dropna(subset=["FinapresSBP"])
             # removing data rows with DBP values higher than 160 and lower than 30 mmHg
-            delete_rows_dbp = (raw_data["DBP"] > 160) | (raw_data["DBP"] < 30)
+            delete_rows_dbp = (raw_data["FinapresDBP"] > 160) | (raw_data["FinapresDBP"] < 30)
             raw_data = raw_data[~delete_rows_dbp]
-            raw_data = raw_data.dropna(subset=["DBP"])
+            raw_data = raw_data.dropna(subset=["FinapresDBP"])
 
             if not self.data_error:
                 if len(raw_data) > 0:
@@ -409,6 +409,24 @@ class Processor:
                 self.error_handling(self.id)
                 self.data_error = False
 
+    def create_data_frame(self):
+        self.ids = os.listdir(self.target_path + "SelectedData/")
+        if not self.replace:
+            id_ready = os.listdir(self.target_path + "DataFrame/")
+            self.ids = [x for x in self.ids if x[:10] + '.csv' not in id_ready]
+        for self.id in tqdm(self.ids, desc="Extracting the blood pressure of each subject"):
+            subject_data = pd.read_csv(self.target_path + "SelectedData/" + self.id)
+            filtered_indices = np.load(self.target_path + "FilteredIndices/" + self.id[:10] + ".npy")
+            subject_data = subject_data.iloc[filtered_indices]
+            df = subject_data
+            pat_list = {"on": [], "it": [], "u": [], "sp": [], "dn": [], "dp": []}
+            for key, _ in pat_list.items():
+                pat_list[key] = np.load(self.target_path + f"ExtractedPAT/{key.upper()}/" + self.id[:10] + ".npy", allow_pickle=True)
+                assert (len(pat_list[key]) == len(subject_data))
+                df[f"PAT({key.upper()})"] = pat_list[key]
+            df = df.drop(columns=["ID", "Beat", "Age", "Gender", "detectionPoint", "corrABP", "corrPPG", "DC", "ABP"])
+            df.to_csv(self.target_path + f"DataFrame/{self.id[:10]}.csv")
+
     def process(self):
         print("Starting the process of selecting and cleaning the raw feature data")
         self.replace = False
@@ -421,7 +439,7 @@ class Processor:
         print("Process complete \n")
 
         print("Starting the process of calculation and extraction of PAT")
-        self.replace = True
+        self.replace = False
         self.pat_extraction()
         print("Process complete \n")
 
@@ -433,4 +451,9 @@ class Processor:
         print("Starting the extraction of the blood pressure (BP) label/values per subject")
         self.replace = False
         self.bp_extraction()
+        print("Process complete \n")
+
+        print("Creating a Data Frame with Features, PATs and BPs")
+        self.replace = False
+        self.create_data_frame()
         print("Process complete \n")
