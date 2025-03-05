@@ -7,6 +7,7 @@ matplotlib.use('TkAgg')
 import pandas as pd
 import seaborn as sns
 import os
+from src.load import get_data, get_data_frame
 
 
 def load_data(path_main, file, pat_type):
@@ -19,7 +20,7 @@ def load_data(path_main, file, pat_type):
     pat = pat[no_zeros]
     return sbp, dbp, pat
 
-def plot_pat(path_main, sub_files):
+def plot_pat_bp(path_main, sub_files):
     """
     Plot the extracted PAT of one selected subject
     :param path_main: processed, extracted PAT
@@ -43,13 +44,20 @@ def plot_pat(path_main, sub_files):
             # Spearman Correlation DBP-PAT
             pat_list[key].append(np.round(scipy.stats.spearmanr(pat, dbp)[0], 2))
 
-        fig, axes = plt.subplots(3, 2, figsize=(15, 9), sharex=True, sharey=False)
+        fig, axes = plt.subplots(4, 2, figsize=(15, 9), sharex=True, sharey=False)
         axes = axes.flatten()
         for (key, _), (_, ax) in zip(pat_list.items(), enumerate(axes)):
             ax.plot(pat_list[key][0])
             ax.set(xlabel='Samples (a.u.)', ylabel=f'PAT({key.upper()}) (ms)')
             ax.set_title(f"DBP_PAT({key.upper()}): ρ = {pat_list[key][2]}, SBP_PAT({key.upper()}): ρ = {pat_list[key][1]}",
                          fontsize=12)
+        axes[6].plot(sbp)
+        axes[6].set(xlabel='Samples (a.u.)', ylabel=f'SBP (mmHg)')
+        axes[6].set_title(f"SBP", fontsize=12)
+        axes[7].plot(dbp)
+        axes[7].set(xlabel='Samples (a.u.)', ylabel=f'DBP (mmHg)')
+        axes[7].set_title(f"DBP", fontsize=12)
+
         plt.tight_layout(pad=3.0)  # Increase padding between plots
         fig.suptitle(f"PAT - {file[:10]}")
         plt.savefig(path_main + f"../../reports/figures/PAT_BP/" + f'{file[:10]}.pdf', format='pdf')
@@ -197,6 +205,19 @@ def calculate_corr_bp_pat(path_main, sub_files, pat_type):
         print(f"Spearman R - Overall mean of subject-wise R between PAT({pat_type}) and SBP - Mean: {np.round(np.mean(r_spearman_sbp), 2)} and SD: {np.round(np.std(r_spearman_sbp), 2)}")
         print(f"Spearman R - Overall mean of subject-wise R between PAT({pat_type}) and DBP - Mean: {np.round(np.mean(r_spearman_dbp), 2)} and SD: {np.round(np.std(r_spearman_dbp), 2)} \n")
 
+def descriptive_stats(files_train, files_test, bp_type):
+    df_train = get_data(files_train)
+    df_test = get_data(files_test)
+
+    bp_train = df_train[f"Finapres{bp_type.upper()}"]
+    bp_test = df_test[f"Finapres{bp_type.upper()}"]
+
+    print("Training Labels Summary:")
+    print(pd.Series(bp_train).describe())
+
+    print("\nTesting Labels Summary:")
+    print(pd.Series(bp_test).describe())
+
 def t_test_pat(path_main, files_train, files_test, pat_type):
     """
     T-Test for checking the statistical difference between PAT values of the train and test files after split
@@ -204,10 +225,10 @@ def t_test_pat(path_main, files_train, files_test, pat_type):
     pat_files_train = [path_main + f"ExtractedPAT/{pat_type}/{file}" for file in files_train]
     pat_files_test = [path_main + f"ExtractedPAT/{pat_type}/{file}" for file in files_test]
 
-    pat_md_train = np.array([np.mean(np.load(file, allow_pickle=True)) for file in pat_files_train])
-    pat_md_test = np.array([np.mean(np.load(file, allow_pickle=True)) for file in pat_files_test])
+    pat_train = np.array([np.mean(np.load(file, allow_pickle=True)) for file in pat_files_train])
+    pat_test = np.array([np.mean(np.load(file, allow_pickle=True)) for file in pat_files_test])
 
-    t_stat_pat, p_val_pat = scipy.stats.ttest_ind(pat_md_train, pat_md_test)
+    t_stat_pat, p_val_pat = scipy.stats.ttest_ind(pat_train, pat_test)
     print(f"PAT{pat_type}-t-statistic:", t_stat_pat)
     print(f"PAT{pat_type}-p-value:", p_val_pat)
     alpha = 0.05
@@ -215,3 +236,48 @@ def t_test_pat(path_main, files_train, files_test, pat_type):
         print("Fail to reject null hypothesis: No significant difference between train and test datasets. \n")
     else:
         print("Reject null hypothesis: Significant difference between train and test datasets. \n")
+
+def t_test_bp(files_train, files_test, bp_type):
+    """
+    T-Test for checking the statistical difference between PAT values of the train and test files after split
+    """
+    df_train = get_data(files_train)
+    df_test = get_data(files_test)
+
+    bp_train = df_train[f"Finapres{bp_type.upper()}"]
+    bp_test = df_test[f"Finapres{bp_type.upper()}"]
+
+    t_stat_pat, p_val_pat = scipy.stats.ttest_ind(bp_train, bp_test)
+    print(f"t-statistic:", t_stat_pat)
+    print(f"p-value:", p_val_pat)
+    alpha = 0.05
+    if p_val_pat > alpha:
+        print("Fail to reject null hypothesis: No significant difference between train and test datasets. \n")
+    else:
+        print("Reject null hypothesis: Significant difference between train and test datasets. \n")
+
+def ks_test_bp(files_train, files_test, bp_type, random_state):
+    """
+    Kolmogorov-Smirnov (KS) Test checks if the train and test labels come from the same distribution.
+    :return:
+    """
+    df_train = get_data_frame(files_train)
+    df_test = get_data_frame(files_test)
+
+    bp_train = df_train[f"Finapres{bp_type.upper()}"]
+    bp_test = df_test[f"Finapres{bp_type.upper()}"]
+
+    ks_stat, p_value = scipy.stats.ks_2samp(bp_train, bp_test)
+    print(f"KS Statistic: {ks_stat}, p-value: {p_value}")
+
+    if p_value < 0.05:
+        print("Significant difference detected between train and test labels!")
+    else:
+        print("Train and test labels have a similar distribution.")
+
+        print("Training Labels Summary:")
+        print(pd.Series(bp_train).describe())
+        print("\nTesting Labels Summary:")
+        print(pd.Series(bp_test).describe())
+
+        return random_state
