@@ -39,7 +39,7 @@ def get_data_frame(files):
         result_df = pd.concat([result_df, df], ignore_index=True)
     return result_df
 
-def process(files_train, files_val, files_test):
+def process(files_train, files_val, files_test, bp_type):
     df_train = get_data_frame(files_train)
     df_val = get_data_frame(files_val)
     df_test = get_data_frame(files_test)
