@@ -11,13 +11,11 @@ from src.load import get_data, get_data_frame
 
 
 def load_data(path_main, file, pat_type):
-    sbp = np.load(path_main + "ExtractedBP/SBP/" + file + ".npy")
-    dbp = np.load(path_main + "ExtractedBP/DBP/" + file + ".npy")
-    pat = np.load(path_main + f"ExtractedPAT/{pat_type}/" + file + ".npy", allow_pickle=True)
-    no_zeros = (pat != 0)
-    sbp = sbp[no_zeros]
-    dbp = dbp[no_zeros]
-    pat = pat[no_zeros]
+    df = pd.read_csv(path_main + "DataFrame/" + file + ".csv")
+    no_zeros = (df[f"PAT({pat_type})"] != 0)
+    sbp = df["FinapresSBP"][no_zeros]
+    dbp = df["FinapresDBP"][no_zeros]
+    pat = df[f"PAT({pat_type})"][no_zeros]
     return sbp, dbp, pat
 
 def plot_pat_bp(path_main, sub_files):
@@ -61,7 +59,7 @@ def plot_pat_bp(path_main, sub_files):
         plt.tight_layout(pad=3.0)  # Increase padding between plots
         fig.suptitle(f"PAT - {file[:10]}")
         plt.savefig(path_main + f"../../reports/figures/PAT_BP/" + f'{file[:10]}.pdf', format='pdf')
-        plt.show()
+        # plt.show()
         plt.close()
 
 def calculate_mean_std_pat(path_main, sub_files, pat_type):
@@ -237,24 +235,30 @@ def t_test_pat(path_main, files_train, files_test, pat_type):
     else:
         print("Reject null hypothesis: Significant difference between train and test datasets. \n")
 
-def t_test_bp(files_train, files_test, bp_type):
+def t_test_bp(files_train, files_test, bp_type, random_state):
     """
     T-Test for checking the statistical difference between PAT values of the train and test files after split
     """
-    df_train = get_data(files_train)
-    df_test = get_data(files_test)
+    df_train = get_data_frame(files_train)
+    df_test = get_data_frame(files_test)
 
     bp_train = df_train[f"Finapres{bp_type.upper()}"]
     bp_test = df_test[f"Finapres{bp_type.upper()}"]
 
-    t_stat_pat, p_val_pat = scipy.stats.ttest_ind(bp_train, bp_test)
-    print(f"t-statistic:", t_stat_pat)
-    print(f"p-value:", p_val_pat)
+    t_stat_bp, p_val_bp = scipy.stats.ttest_ind(bp_train, bp_test)
+    print(f"t-statistic:", t_stat_bp)
+    print(f"p-value:", p_val_bp)
     alpha = 0.05
-    if p_val_pat > alpha:
-        print("Fail to reject null hypothesis: No significant difference between train and test datasets. \n")
+    if p_val_bp < alpha:
+        print(f"{random_state} - Significant difference detected between train and test labels!")
     else:
-        print("Reject null hypothesis: Significant difference between train and test datasets. \n")
+        print(f"{random_state} - Train and test labels have a similar distribution.")
+        print("Training Labels Summary:")
+        print(pd.Series(bp_train).describe())
+        print("\nTesting Labels Summary:")
+        print(pd.Series(bp_test).describe())
+
+        return random_state
 
 def ks_test_bp(files_train, files_test, bp_type, random_state):
     """
