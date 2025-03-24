@@ -13,20 +13,70 @@ import pyPPG.ppg_sqi as SQI
 import matplotlib.pyplot as plt
 matplotlib.use('TkAgg')
 
-def check_fiducial_plot(ecg, ppg, vpg, ref_pts, rPeak, key, sub_id):
+def check_fiducial_plot(ecg, ppg, vpg, ref_pts, prev_ref_pts, next_ref_pts, rPeak, key, sub_id):
     plt.figure()
+    # plot normalized ppg signal
     plt.plot(min_max_norm(ppg))
+    # plot normalized vpg signal
     plt.plot(min_max_norm(vpg))
-    plt.plot(np.array(ref_pts).astype(int)[0:4],
-             min_max_norm(ppg)[np.array(ref_pts).astype(int)[0:4]], "bo")
-    plt.plot(np.array(ref_pts).astype(int)[4],
-             min_max_norm(vpg)[np.array(ref_pts).astype(int)[4]], "go")
-    plt.plot(min_max_norm(ecg))
-    plt.plot(rPeak, min_max_norm(ecg)[rPeak], "ro")
-    plt.xlim(rPeak - 100, np.array(ref_pts)[3].astype(int) + 100)
-    plt.title(f"{sub_id} - PAT({key})")
-    plt.show()
 
+    # plot the onset of the previous ppg beat
+    plt.vlines(np.array(prev_ref_pts).astype(int)[0], ymin=0, ymax=1, color="c")
+    plt.plot(np.array(prev_ref_pts).astype(int)[0],
+             min_max_norm(ppg)[np.array(prev_ref_pts).astype(int)[0]], "ko")
+    # plot the fiducial points - sp, dn, dp - of the previous ppg beat
+    plt.plot(np.array(prev_ref_pts).astype(int)[1:4],
+             min_max_norm(ppg)[np.array(prev_ref_pts)[1:4].astype("int64")], "bo")
+    # here changed the index to 5 to get the point u, before the index was 4 and this is now the offset of the PPG beat
+    # plot the maximum of the previous vpg beat as fiducial called maximum derivative
+    plt.plot(np.array(prev_ref_pts).astype(int)[5],
+             min_max_norm(vpg)[np.array(prev_ref_pts).astype(int)[5]], "go")
+    # plot the offset of the previous ppg beat
+    plt.plot(np.array(prev_ref_pts).astype(int)[4],
+             min_max_norm(ppg)[np.array(prev_ref_pts).astype(int)[4]], "ko")
+    plt.vlines(np.array(prev_ref_pts).astype(int)[4], ymin=0, ymax=1, color="c")
+
+    # plot the onset of the desired ppg beat
+    plt.vlines(np.array(ref_pts).astype(int)[0], ymin=0, ymax=1, color="c")
+    plt.plot(np.array(ref_pts).astype(int)[0],
+             min_max_norm(ppg)[np.array(ref_pts).astype(int)[0]], "ko")
+    # plot the fiducial points - sp, dn, dp - of the ppg signal
+    plt.plot(np.array(ref_pts).astype(int)[1:4],
+             min_max_norm(ppg)[np.array(ref_pts).astype(int)[1:4]], "bo")
+    # here changed the index to 5 to get the point u, before the index was 4 and this is now the offset of the PPG beat
+    # plot the maximum of the vpg beat as fiducial called maximum derivative
+    plt.plot(np.array(ref_pts).astype(int)[5],
+             min_max_norm(vpg)[np.array(ref_pts).astype(int)[5]], "go")
+    # plot the offset of the desired ppg beat
+    plt.plot(np.array(ref_pts).astype(int)[4],
+             min_max_norm(ppg)[np.array(ref_pts).astype(int)[4]], "ko")
+    plt.vlines(np.array(ref_pts).astype(int)[4], ymin=0, ymax=1, color="c")
+
+    # plot the onset of the next ppg beat
+    plt.vlines(np.array(next_ref_pts).astype(int)[0], ymin=0, ymax=1, color="c")
+    plt.plot(np.array(next_ref_pts).astype(int)[0],
+             min_max_norm(ppg)[np.array(next_ref_pts).astype(int)[0]], "ko")
+    # plot the fiducial points - sp, dn, dp - of the next ppg beat
+    plt.plot(np.array(next_ref_pts).astype(int)[1:4],
+             min_max_norm(ppg)[np.array(next_ref_pts).astype(int)[1:4]], "bo")
+    # here changed the index to 5 to get the point u, before the index was 4 and this is now the offset of the PPG beat
+    # plot the maximum of the next vpg beat as fiducial called maximum derivative
+    plt.plot(np.array(next_ref_pts).astype(int)[5],
+             min_max_norm(vpg)[np.array(next_ref_pts).astype(int)[5]], "go")
+    # plot the offset of the next ppg beat
+    plt.plot(np.array(next_ref_pts).astype(int)[4],
+             min_max_norm(ppg)[np.array(next_ref_pts).astype(int)[4]], "ko")
+    plt.vlines(np.array(next_ref_pts).astype(int)[4], ymin=0, ymax=1, color="c")
+
+    # plot the normalized ecg signal
+    plt.plot(min_max_norm(ecg))
+    # plot the corresponding r-peak of the ecg beat
+    plt.plot(rPeak, min_max_norm(ecg)[rPeak], "ro")
+    # set the time frame of interest we want to look at
+    plt.xlim(prev_ref_pts[0] - 10, np.array(next_ref_pts)[4].astype(int) + 10)
+    plt.title(f"{sub_id} - PAT({key})")
+    # plt.legend(["PPG", "VPG", "ON", "SP, DN, DP", "MD", "Off", "ECG", "R-Peak"])
+    plt.show()
 
 def pan_tompkins_algorithm(fs, ecg_signal):
     """
@@ -43,7 +93,9 @@ def pan_tompkins_algorithm(fs, ecg_signal):
 
 def get_r_peaks(fs, ecg_signal):
     try:
-        r_idx = signals.ecg.ecg(ecg_signal, sampling_rate=fs, show=False)["rpeaks"]
+        out = signals.ecg.ecg(ecg_signal, sampling_rate=fs, show=False)
+        # ecg_filt = out["filtered"]
+        r_idx = out["rpeaks"]
     except:
         r_idx = pan_tompkins_algorithm(fs, ecg_signal)
     return r_idx
@@ -142,6 +194,7 @@ class Processor:
             # removing data rows with SBP values higher than 250 and lower than 50 mmHg
             delete_rows_sbp = (raw_data["FinapresSBP"] > 250) | (raw_data["FinapresSBP"] < 50)
             raw_data = raw_data[~delete_rows_sbp]
+
             raw_data = raw_data.dropna(subset=["FinapresSBP"])
             # removing data rows with DBP values higher than 160 and lower than 30 mmHg
             delete_rows_dbp = (raw_data["FinapresDBP"] > 160) | (raw_data["FinapresDBP"] < 30)
@@ -172,20 +225,13 @@ class Processor:
         signal.fL = 0.5  # Lower cutoff frequency (Hz)
         signal.fH = 12  # Upper cutoff frequency (Hz)
         signal.order = 4  # Filter order
-        signal.sm_wins = {'ppg': 10, 'vpg': 10, 'apg': 10, 'jpg': 10}  # smoothing windows in millisecond for the PPG, PPG', PPG'' and PPG'''
+        signal.sm_wins = {'ppg': 30, 'vpg': 10, 'apg': 10, 'jpg': 10}  # smoothing windows in millisecond for the PPG, PPG', PPG'' and PPG'''
 
-        prep = PP.Preprocessing(signal, filtering=signal.filtering)
-        signal.filt_ppg = prep[0]
-        signal.filt_sig = prep[0]
-        signal.filt_vpg = prep[1]
-        signal.filt_d1 = prep[1]
-        signal.filt_apg = prep[2]
-        signal.filt_d2 = prep[2]
-        signal.filt_jpg = prep[3]
-        signal.filt_d3 = prep[3]
+        prep = PP.Preprocess()
+        signal.ppg, signal.vpg, signal.apg, signal.jpg = prep.get_signals(signal)
 
-        np.save(self.data_path + "../processed/FilteredPPG/PPG/" + self.id[:10], signal.filt_sig)
-        np.save(self.data_path + "../processed/FilteredPPG/VPG/" + self.id[:10], signal.filt_vpg)
+        np.save(self.data_path + "../processed/FilteredPPG/PPG/" + self.id[:10], signal.ppg)
+        np.save(self.data_path + "../processed/FilteredPPG/VPG/" + self.id[:10], signal.vpg)
 
         """
         Extracting the fiducial points
@@ -198,8 +244,6 @@ class Processor:
         fiducials = fpex.get_fiducials(s=s)
 
         fp = Fiducials(fp=fiducials)
-        ppgSQI = round(np.mean(SQI.get_ppgSQI(ppg=signal.filt_ppg, fs=signal.fs, annotation=fp.sp)) * 100, 2)
-        print(f"Mean PPG SQI - {self.id[:10]}: ", ppgSQI, '%')
 
         fiducials.to_csv(self.target_path + f"FiducialPoints/" + self.id, index=False)
 
@@ -261,7 +305,7 @@ class Processor:
         if not self.replace:
             id_ready = os.listdir(self.target_path + "ExtractedPAT/ON/")
             self.ids = [x for x in self.ids if x[:10] + '.npy' not in id_ready]
-        # self.ids = ["subject001.csv"]
+        self.ids = ["subject014.csv"]
         for self.id in tqdm(self.ids, desc="Extracting the PAT"):
             # loads the PPG and ECG segments
             self.load_mat_data()
@@ -304,12 +348,26 @@ class Processor:
         reference_points = self.fiducials.loc[indices]
         rPeaks = get_r_peaks(fs=self.fs, ecg_signal=self.ecg_segment)
 
+        reference_points = reference_points.reset_index(drop=True)
+        ppgSQI = SQI.get_ppgSQI(ppg=self.ppg_segment, fs=self.fs,annotation=reference_points["sp"]) * 100
+        sqi_val = np.array(ppgSQI)
+        sqi_val = np.append(sqi_val, sqi_val[-1])
+
         pat_values = {"on": [], "sp": [], "dn": [], "dp": [], "u": [], "it": []}
         for index, ref_pts in reference_points.iterrows():
             if not ref_pts["on"] < ref_pts["u"] < ref_pts["sp"]:
                 ref_pts["u"] = np.argmax(self.vpg_segment[int(ref_pts["on"]):int(ref_pts["sp"])]) + int(ref_pts["on"])
+
+            tangent_slope_md = self.vpg_segment[int(ref_pts["u"])]
+            tangent_slope_v = self.vpg_segment[int(ref_pts["on"])]
+            # calculating the tangent intercept of md and v
+            tangent_intercept_md = self.ppg_segment[int(ref_pts["u"])] - self.vpg_segment[int(ref_pts["u"])] * ref_pts["u"]
+            tangent_intercept_v = self.ppg_segment[int(ref_pts["on"])] - self.vpg_segment[int(ref_pts["on"])] * ref_pts["on"]
+            # calculating the intersecting point of the tangents of v and md
+            ref_pts["it"] = int((tangent_intercept_v - tangent_intercept_md) / (tangent_slope_md - tangent_slope_v))
+
             diff_onset_rPeak = ref_pts["on"] - rPeaks
-            criteriaIdx = np.where((diff_onset_rPeak > 2) & (diff_onset_rPeak < 50))[0]
+            criteriaIdx = np.where((diff_onset_rPeak > 2) & (diff_onset_rPeak < 70))[0]
             if len(criteriaIdx) == 0:
                 for key in pat_values:
                     if len(pat_values[key]) >= 3:
@@ -319,33 +377,14 @@ class Processor:
             else:
                 selected_rPeak = rPeaks[criteriaIdx[np.argmin(diff_onset_rPeak[criteriaIdx])]]
                 for key in pat_values:
-                    if key == "it":
-                        try:
-                            tangent_slope_md = self.vpg_segment[int(ref_pts["u"])]
-                            tangent_slope_v = self.vpg_segment[int(ref_pts["on"])]
-                            # calculating the tangent intercept of md and v
-                            tangent_intercept_md = self.ppg_segment[int(ref_pts["u"])] - self.vpg_segment[int(ref_pts["u"])] * ref_pts["u"]
-                            tangent_intercept_v = self.ppg_segment[int(ref_pts["on"])] - self.vpg_segment[int(ref_pts["on"])] * ref_pts["on"]
-                            # calculating the intersecting point of the tangents of v and md
-                            intersecting_point = (tangent_intercept_v - tangent_intercept_md) / (tangent_slope_md - tangent_slope_v)
-                            if ref_pts["on"] < intersecting_point < ref_pts["u"]:
-                                pat_values[key].append(int(((intersecting_point - selected_rPeak) / self.fs) * 1000))
-                            else:
-                                check_fiducial_plot(ecg=self.ecg_segment, ppg=self.ppg_segment, vpg=self.vpg_segment,
-                                                    ref_pts=ref_pts, key=key, rPeak=selected_rPeak, sub_id=self.id[:10])
-                                pat_values[key].append(0)
-                        except:
-                            check_fiducial_plot(ecg=self.ecg_segment, ppg=self.ppg_segment, vpg=self.vpg_segment,
-                                                ref_pts=ref_pts, key=key, rPeak=selected_rPeak, sub_id=self.id[:10])
-                            pat_values[key].append(0)
-                    else:
-                        if not np.isnan(ref_pts[key]):
+                    if (not np.isnan(ref_pts[key])) and sqi_val[index] > 50:
                             pat_values[key].append(int(((ref_pts[key] - selected_rPeak) / self.fs) * 1000))
+                    else:
+                        if len(pat_values[key]) >= 3:
+                            pat_values[key].append(np.mean(pat_values[key][-3:]))
                         else:
-                            if len(pat_values[key]) >= 3:
-                                pat_values[key].append(np.mean(pat_values[key][-3:]))
-                            else:
-                                pat_values[key].append(pat_values[key][-1])
+                            pat_values[key].append(pat_values[key][-1])
+
         for key, values in pat_values.items():
             np.save(self.target_path + f"ExtractedPAT/{key.capitalize()}/" + self.id[:10], values)
 
@@ -450,17 +489,17 @@ class Processor:
         self.pat_extraction()
         print("Process complete \n")
 
-        print("Starting the process of extracting the different feature sets")
-        self.replace = False
-        self.feature_extraction()
-        print("Process complete \n")
-
-        print("Starting the extraction of the blood pressure (BP) label/values per subject")
-        self.replace = False
-        self.bp_extraction()
-        print("Process complete \n")
-
         print("Creating a Data Frame with Features, PATs and BPs")
-        self.replace = False
+        self.replace = True
         self.create_data_frame()
         print("Process complete \n")
+
+        # print("Starting the process of extracting the different feature sets")
+        # self.replace = True
+        # self.feature_extraction()
+        # print("Process complete \n")
+        #
+        # print("Starting the extraction of the blood pressure (BP) label/values per subject")
+        # self.replace = True
+        # self.bp_extraction()
+        # print("Process complete \n")

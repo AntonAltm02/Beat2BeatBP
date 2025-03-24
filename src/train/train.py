@@ -53,12 +53,12 @@ def train_basic_bp(features_train, features_val, target_train, target_val, bp_ty
     plot_hist(target_train, target_val)
 
     print("Training the model")
-    num_boost_round = 1000
+    num_boost_round = 5000
     xgb_reg = xgb.XGBRegressor(
         objective="reg:squarederror",
         eval_metric="mae",
         n_estimators=num_boost_round,
-        early_stopping_rounds=20,
+        # early_stopping_rounds=20,
         learning_rate=0.01,
         device="cpu",
     )

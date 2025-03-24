@@ -28,8 +28,8 @@ if __name__ == "__main__":
     between PAT and BP, etc.
     """
     path_main = data_path + "/../data/processed/"
-    files = os.listdir(os.path.join(data_path + "/../data/processed/ExtractedBP/SBP/"))
-    show_stats = True
+    files = os.listdir(os.path.join(data_path + "/../data/processed/DataFrame/"))
+    show_stats = False
     if show_stats:
         stats.plot_pat_bp(path_main=path_main, sub_files=files)
         stats.calculate_corr_bp_pat(path_main=path_main, sub_files=files, pat_type=["ON", "IT", "U", "SP", "DN", "DP"])
@@ -71,20 +71,22 @@ if __name__ == "__main__":
     eval_bp = True
     if eval_bp:
         train_type = "BP"
-        bp_type = "DBP"
+        bp_type = "SBP"
         feature_type = "ALL"
 
         # Conducting statistical tests to have balanced splits of train and test data
-        fixed_state = 5
+        fixed_state = 18
         conduct_test = False
         if conduct_test:
             for state in range(100):
                 train_files, test_files = train_test_split(files, test_size=0.3, random_state=state)
-                fixed_state = stats.ks_test_bp(files_train=train_files, files_test=test_files, bp_type=bp_type, random_state=state)
-        train_files, test_files = train_test_split(files, test_size=0.3, random_state=fixed_state)
-        train_files, val_files = train_test_split(train_files, test_size=0.2, random_state=fixed_state)
+                fixed_state = stats.t_test_bp(files_train=train_files, files_test=test_files, bp_type=bp_type, random_state=state)
+                if fixed_state is not None:
+                    break
+        train_files, temp_files = train_test_split(files, test_size=0.3, random_state=fixed_state)
+        test_files, val_files = train_test_split(temp_files, test_size=0.3, random_state=fixed_state)
         features_train, features_val, features_test, target_train, target_val, target_test = process(
-            files_train=train_files, files_val=val_files, files_test=test_files)
+            files_train=train_files, files_val=val_files, files_test=test_files, bp_type=bp_type)
 
         model_name = f"{bp_type}_{feature_type}"
         train_basic_bp(features_train=features_train, features_val=features_val, target_train=target_train,
