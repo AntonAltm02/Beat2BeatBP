@@ -2,6 +2,7 @@ from tqdm import tqdm
 import numpy as np
 import os
 import pandas as pd
+from sklearn.preprocessing import MinMaxScaler
 
 script_dir = os.path.dirname(__file__)
 data_path = os.path.join(script_dir + "/../data/processed/")
@@ -43,12 +44,20 @@ def process(files_train, files_val, files_test, bp_type):
     df_train = get_data_frame(files_train)
     df_val = get_data_frame(files_val)
     df_test = get_data_frame(files_test)
+
     drop_columns = ["FinapresSBP", "FinapresDBP", "FinapresPP", "PPG", "SBP", "DBP", "PP", "MBP",
-                    "PAT(ON)", "PAT(U)", "PAT(IT)", "PAT(SP)", "PAT(DN)", "PAT(DP)"]
+                    "PAT(ON)", "PAT(IT)", "PAT(U)", "PAT(SP)", "PAT(DN)", "PAT(DP)"]
     features_train = df_train.drop(columns=drop_columns)
     features_val = df_val.drop(columns=drop_columns)
     features_test = df_test.drop(columns=drop_columns)
+
+    # scaler = MinMaxScaler()
+    # features_train = pd.DataFrame(scaler.fit_transform(features_train), columns=features_train.columns)
+    # features_val = pd.DataFrame(scaler.fit_transform(features_val), columns=features_val.columns)
+    # features_test = pd.DataFrame(scaler.fit_transform(features_test), columns=features_test.columns)
+
     target_train = df_train[f"Finapres{bp_type.upper()}"]
     target_val = df_val[f"Finapres{bp_type.upper()}"]
     target_test = df_test[f"Finapres{bp_type.upper()}"]
+
     return features_train, features_val, features_test, target_train, target_val, target_test
