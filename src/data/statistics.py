@@ -3,6 +3,7 @@ import scipy
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import matplotlib
+from matplotlib.backends.backend_pdf import PdfPages
 matplotlib.use('TkAgg')
 import pandas as pd
 import seaborn as sns
@@ -25,42 +26,44 @@ def plot_pat_bp(path_main, sub_files):
     :param sub_files: selected subject file
     :return:
     """
-    for file in tqdm(sub_files, desc="Plotting PATs and Spearman Correlation with BP"):
-        pat_list = {
-            "on": [],
-            "it": [],
-            "u": [],
-            "sp": [],
-            "dn": [],
-            "dp": [],
-        }
-        for key, _ in pat_list.items():
-            sbp, dbp, pat = load_data(path_main, file[:10], key.upper())
-            pat_list[key].append(pat)
-            # Spearman Correlation SBP-PAT
-            pat_list[key].append(np.round(scipy.stats.spearmanr(pat, sbp)[0], 2))
-            # Spearman Correlation DBP-PAT
-            pat_list[key].append(np.round(scipy.stats.spearmanr(pat, dbp)[0], 2))
+    pdf_file = path_main + f"../../reports/figures/PAT_BP/output.pdf"
+    with PdfPages(pdf_file) as pdf:
+        for file in tqdm(sub_files, desc="Plotting PATs and Spearman Correlation with BP"):
+            pat_list = {
+                "on": [],
+                "it": [],
+                "u": [],
+                "sp": [],
+                "dn": [],
+                "dp": [],
+            }
+            for key, _ in pat_list.items():
+                sbp, dbp, pat = load_data(path_main, file[:10], key.upper())
+                pat_list[key].append(pat)
+                # Spearman Correlation SBP-PAT
+                pat_list[key].append(np.round(scipy.stats.spearmanr(pat, sbp)[0], 2))
+                # Spearman Correlation DBP-PAT
+                pat_list[key].append(np.round(scipy.stats.spearmanr(pat, dbp)[0], 2))
 
-        fig, axes = plt.subplots(4, 2, figsize=(15, 9), sharex=True, sharey=False)
-        axes = axes.flatten()
-        for (key, _), (_, ax) in zip(pat_list.items(), enumerate(axes)):
-            ax.plot(pat_list[key][0])
-            ax.set(xlabel='Samples (a.u.)', ylabel=f'PAT({key.upper()}) (ms)')
-            ax.set_title(f"DBP_PAT({key.upper()}): ρ = {pat_list[key][2]}, SBP_PAT({key.upper()}): ρ = {pat_list[key][1]}",
-                         fontsize=12)
-        axes[6].plot(sbp)
-        axes[6].set(xlabel='Samples (a.u.)', ylabel=f'SBP (mmHg)')
-        axes[6].set_title(f"SBP", fontsize=12)
-        axes[7].plot(dbp)
-        axes[7].set(xlabel='Samples (a.u.)', ylabel=f'DBP (mmHg)')
-        axes[7].set_title(f"DBP", fontsize=12)
+            fig, axes = plt.subplots(4, 2, figsize=(15, 9), sharex=True, sharey=False)
+            axes = axes.flatten()
+            for (key, _), (_, ax) in zip(pat_list.items(), enumerate(axes)):
+                ax.plot(pat_list[key][0])
+                ax.set(xlabel='Samples (a.u.)', ylabel=f'PAT({key.upper()}) (ms)')
+                ax.set_title(f"DBP_PAT({key.upper()}): ρ = {pat_list[key][2]}, SBP_PAT({key.upper()}): ρ = {pat_list[key][1]}",
+                             fontsize=12)
+            axes[6].plot(sbp)
+            axes[6].set(xlabel='Samples (a.u.)', ylabel=f'SBP (mmHg)')
+            axes[6].set_title(f"SBP", fontsize=12)
+            axes[7].plot(dbp)
+            axes[7].set(xlabel='Samples (a.u.)', ylabel=f'DBP (mmHg)')
+            axes[7].set_title(f"DBP", fontsize=12)
 
-        plt.tight_layout(pad=3.0)  # Increase padding between plots
-        fig.suptitle(f"PAT - {file[:10]}")
-        plt.savefig(path_main + f"../../reports/figures/PAT_BP/" + f'{file[:10]}.pdf', format='pdf')
-        # plt.show()
-        plt.close()
+            plt.tight_layout(pad=3.0)  # Increase padding between plots
+            fig.suptitle(f"PAT - {file[:10]}")
+            pdf.savefig()
+            plt.show()
+            plt.close()
 
 def calculate_mean_std_pat(path_main, sub_files, pat_type):
     """
