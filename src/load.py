@@ -3,9 +3,28 @@ import numpy as np
 import os
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 
 script_dir = os.path.dirname(__file__)
 data_path = os.path.join(script_dir + "/../data/processed/")
+
+
+def conduct_PCA(data):
+    data.fillna(data.mean(), inplace=True)
+    # Standardize the data
+    scaler = StandardScaler()
+    data_scaled = scaler.fit_transform(data)
+
+    pca = PCA(n_components=10)
+    principal_components = pca.fit_transform(data_scaled)
+
+    pca_df = pd.DataFrame(principal_components, columns=[f'PC_{i + 1}' for i in range(10)])
+    explained_variance = pca.explained_variance_ratio_
+    print("Explained Variance Ratio:", explained_variance)
+    print("Cumulative Explained Variance:", np.cumsum(explained_variance))
+
+    return pca_df
 
 
 def get_data(files, pat_type=None, feature_type=None):
