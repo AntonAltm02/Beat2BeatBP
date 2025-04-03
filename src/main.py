@@ -5,7 +5,7 @@ from train.train import train_basic_pat, train_basic_bp
 from sklearn.model_selection import train_test_split
 from src.evaluation.test import test_basic_pat, test_basic_bp
 import src.evaluation.eval as eval
-from src.load import get_data, get_data_frame, process
+from src.load import process
 
 
 script_dir = os.path.dirname(__file__)
@@ -31,7 +31,7 @@ if __name__ == "__main__":
     files = os.listdir(os.path.join(data_path + "/../data/processed/DataFrame/"))
     show_stats = False
     if show_stats:
-        stats.plot_pat_bp(path_main=path_main, sub_files=files)
+        # stats.plot_pat_bp(path_main=path_main, sub_files=files)
         stats.calculate_corr_bp_pat(path_main=path_main, sub_files=files, pat_type=["ON", "IT", "U", "SP", "DN", "DP"])
         stats.calculate_mean_std_pat(path_main=path_main, sub_files=files, pat_type=["ON", "IT", "U", "SP", "DN", "DP"])
         stats.plot_bp_pat_boxplot(path_main=path_main, sub_files=files, pat_type=["ON", "IT", "U", "SP", "DN", "DP"])
@@ -75,25 +75,32 @@ if __name__ == "__main__":
         feature_type = "ALL"
 
         # Conducting statistical tests to have balanced splits of train and test data
-        fixed_state = 18
+        fixed_state = 42
         conduct_test = False
         if conduct_test:
+            print("Conducting a T-Test for statistical difference measure")
             for state in range(100):
                 train_files, test_files = train_test_split(files, test_size=0.3, random_state=state)
                 fixed_state = stats.t_test_bp(files_train=train_files, files_test=test_files, bp_type=bp_type, random_state=state)
                 if fixed_state is not None:
                     break
+
+        print("Splitting the subjects into train, val and test data")
         train_files, temp_files = train_test_split(files, test_size=0.3, random_state=fixed_state)
-        test_files, val_files = train_test_split(temp_files, test_size=0.3, random_state=fixed_state)
+        test_files, val_files = train_test_split(temp_files, test_size=0.1, random_state=fixed_state)
+
+        stats.descriptive_stats(files_train=train_files, files_test=test_files, bp_type=bp_type)
+
+        print("Extracting the feature and target data for each subject splits")
         features_train, features_val, features_test, target_train, target_val, target_test = process(
-            files_train=train_files, files_val=val_files, files_test=test_files, bp_type=bp_type)
+            files_train=train_files, files_val=temp_files, files_test=temp_files, bp_type=bp_type)
 
         model_name = f"{bp_type}_{feature_type}"
+        print("Training model")
         train_basic_bp(features_train=features_train, features_val=features_val, target_train=target_train,
-                       target_val=target_val, bp_type=bp_type, model_name=model_name)
+                       target_val=target_val, model_name=model_name)
+        print("Inference model")
         predictions, ref = test_basic_bp(features_test=features_test, target_test=target_test, bp_type=bp_type, model_name=model_name)
         eval.error_metrics(predictions, ref)
         eval.corr_plot(predictions, ref, train_type=train_type, pat_type=None, bp_type=bp_type)
         eval.plot_inference(pred=predictions, ref=ref, train_type=train_type, pat_type=None, bp_type=bp_type)
-        print("Stop here")
-

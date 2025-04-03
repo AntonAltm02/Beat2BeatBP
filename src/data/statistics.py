@@ -8,15 +8,19 @@ matplotlib.use('TkAgg')
 import pandas as pd
 import seaborn as sns
 import os
-from src.load import get_data, get_data_frame
+from src.load import get_data_frame, moving_median_filter
 
 
-def load_data(path_main, file, pat_type):
+def load_data(path_main, file, pat_type, filter_bool=True):
     df = pd.read_csv(path_main + "DataFrame/" + file + ".csv")
     no_zeros = (df[f"PAT({pat_type})"] != 0)
     sbp = df["FinapresSBP"][no_zeros]
     dbp = df["FinapresDBP"][no_zeros]
     pat = df[f"PAT({pat_type})"][no_zeros]
+    if filter_bool:
+        pat = moving_median_filter(signal=pat)
+        sbp = moving_median_filter(signal=sbp)
+        dbp = moving_median_filter(signal=dbp)
     return sbp, dbp, pat
 
 def plot_pat_bp(path_main, sub_files):
@@ -26,7 +30,7 @@ def plot_pat_bp(path_main, sub_files):
     :param sub_files: selected subject file
     :return:
     """
-    pdf_file = path_main + f"../../reports/figures/PAT_BP/output.pdf"
+    pdf_file = path_main + f"../../reports/figures/PAT_BP/output_movmedian.pdf"
     with PdfPages(pdf_file) as pdf:
         for file in tqdm(sub_files, desc="Plotting PATs and Spearman Correlation with BP"):
             pat_list = {
@@ -62,7 +66,7 @@ def plot_pat_bp(path_main, sub_files):
             plt.tight_layout(pad=3.0)  # Increase padding between plots
             fig.suptitle(f"PAT - {file[:10]}")
             pdf.savefig()
-            plt.show()
+            # plt.show()
             plt.close()
 
 def calculate_mean_std_pat(path_main, sub_files, pat_type):
@@ -207,15 +211,14 @@ def calculate_corr_bp_pat(path_main, sub_files, pat_type):
         print(f"Spearman R - Overall mean of subject-wise R between PAT({pat_type}) and DBP - Mean: {np.round(np.mean(r_spearman_dbp), 2)} and SD: {np.round(np.std(r_spearman_dbp), 2)} \n")
 
 def descriptive_stats(files_train, files_test, bp_type):
-    df_train = get_data(files_train)
-    df_test = get_data(files_test)
+    df_train = get_data_frame(files_train)
+    df_test = get_data_frame(files_test)
 
     bp_train = df_train[f"Finapres{bp_type.upper()}"]
     bp_test = df_test[f"Finapres{bp_type.upper()}"]
 
     print("Training Labels Summary:")
     print(pd.Series(bp_train).describe())
-
     print("\nTesting Labels Summary:")
     print(pd.Series(bp_test).describe())
 

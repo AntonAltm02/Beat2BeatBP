@@ -6,6 +6,7 @@ import pandas as pd
 from tqdm import tqdm
 from dotmap import DotMap
 import pyPPG.preproc as PP
+import neurokit2 as nk
 from biosppy import signals
 import pyPPG.fiducials as FP
 from pyPPG import PPG, Fiducials
@@ -13,7 +14,30 @@ import pyPPG.ppg_sqi as SQI
 import matplotlib.pyplot as plt
 matplotlib.use('TkAgg')
 
+
+def min_max_norm(signal):
+    """
+
+    :param signal:
+    :return:
+    """
+    out = (signal - np.min(signal)) / (np.max(signal) - np.min(signal))
+    return out
+
 def check_fiducial_plot(ecg, ppg, vpg, ref_pts, prev_ref_pts, next_ref_pts, rPeak, key, sub_id):
+    """
+
+    :param ecg:
+    :param ppg:
+    :param vpg:
+    :param ref_pts:
+    :param prev_ref_pts:
+    :param next_ref_pts:
+    :param rPeak:
+    :param key:
+    :param sub_id:
+    :return:
+    """
     plt.figure()
     # plot normalized ppg signal
     plt.plot(min_max_norm(ppg))
@@ -92,17 +116,18 @@ def pan_tompkins_algorithm(fs, ecg_signal):
     return locs
 
 def get_r_peaks(fs, ecg_signal):
+    """
+
+    :param fs:
+    :param ecg_signal:
+    :return:
+    """
     try:
         out = signals.ecg.ecg(ecg_signal, sampling_rate=fs, show=False)
-        # ecg_filt = out["filtered"]
         r_idx = out["rpeaks"]
     except:
         r_idx = pan_tompkins_algorithm(fs, ecg_signal)
     return r_idx
-
-def min_max_norm(signal):
-    out = (signal - np.min(signal))/(np.max(signal) - np.min(signal))
-    return out
 
 class Processor:
     def __init__(self, data_path, replace, config_filter):
@@ -135,6 +160,21 @@ class Processor:
         self.keys = None
         self.data_error = False
         self._no_error = True
+
+    def check_signal_quality(self):
+        """
+
+        :return:
+        """
+        sqi_all = []
+        self.ids = os.listdir(self.target_path + "SelectedData/")
+        for self.id in tqdm(self.ids, desc="Checking the ECG signal quality"):
+            self.load_mat_data()
+            ecg_filtered = nk.ecg_clean(ecg_signal=self.ecg_segment, sampling_rate=self.fs)
+            r_pks = nk.ecg_peaks(ecg_cleaned=ecg_filtered, sampling_rate=self.fs)[1]["ECG_R_Peaks"]
+            sqi = nk.ecg_quality(ecg_filtered, rpeaks=r_pks, sampling_rate=self.fs, method="zhao2018")
+            sqi_all.append({f"{self.id[:10]}: {sqi}"})
+        print("Stop here")
 
     def error_handling(self, sub_id):
         """
@@ -236,15 +276,12 @@ class Processor:
         """
         Extracting the fiducial points
         """
-
         s = PPG(signal)
         # initializing the fiducials package of pyPPG
         fpex = FP.FpCollection(s=s)
         # extracting the fiducials
         fiducials = fpex.get_fiducials(s=s)
-
         fp = Fiducials(fp=fiducials)
-
         fiducials.to_csv(self.target_path + f"FiducialPoints/" + self.id, index=False)
 
     def fiducial_points_plotter(self):
@@ -305,10 +342,10 @@ class Processor:
         if not self.replace:
             id_ready = os.listdir(self.target_path + "ExtractedPAT/ON/")
             self.ids = [x for x in self.ids if x[:10] + '.npy' not in id_ready]
-        self.ids = ["subject014.csv"]
         for self.id in tqdm(self.ids, desc="Extracting the PAT"):
             # loads the PPG and ECG segments
             self.load_mat_data()
+            self.ecg_segment = nk.ecg_clean(ecg_signal=self.ecg_segment, method='biosppy', sampling_rate=self.fs)
             self.ppg_segment = np.load(self.data_path + "../processed/FilteredPPG/PPG/" + self.id[:10] + ".npy")
             self.vpg_segment = np.load(self.data_path + "../processed/FilteredPPG/VPG/" + self.id[:10] + ".npy")
             if not self.data_error:
@@ -347,6 +384,7 @@ class Processor:
         self.filtered_indices = np.where(np.isin(filtered_detection_points, self.detection_points))[0]
         reference_points = self.fiducials.loc[indices]
         rPeaks = get_r_peaks(fs=self.fs, ecg_signal=self.ecg_segment)
+        # ecg_sqi = nk.ecg_quality(self.ecg_segment, rpeaks=rPeaks, sampling_rate=self.fs)
 
         reference_points = reference_points.reset_index(drop=True)
         ppgSQI = SQI.get_ppgSQI(ppg=self.ppg_segment, fs=self.fs,annotation=reference_points["sp"]) * 100
@@ -474,6 +512,9 @@ class Processor:
             df.to_csv(self.target_path + f"DataFrame/{self.id[:10]}.csv")
 
     def process(self):
+        print("Checking signal quality of ECG")
+        # self.check_signal_quality()
+
         print("Starting the process of selecting and cleaning the raw feature data")
         self.replace = False
         self.selection_and_cleaning()

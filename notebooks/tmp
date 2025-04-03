@@ -70,6 +70,7 @@ plt.show()
 
 if pat_values[key][-1] > 700:
     check_fiducial_plot(ecg=self.ecg_segment, ppg=self.ppg_segment, vpg=self.vpg_segment,
-                        ref_pts=ref_pts, prev_ref_pts=reference_points.loc[index-1],
-                        next_ref_pts=reference_points.loc[index+1], key=key, rPeak=selected_rPeak, sub_id=self.id[:10])
-    print("Beat SQI-Value: ", sqi_val[index])
+                        ref_pts=ref_pts, prev_ref_pts=reference_points.loc[index - 1],
+                        next_ref_pts=reference_points.loc[index + 1], key=key,
+                        rPeak=selected_rPeak, sub_id=self.id[:10])
+    print("Beat SQI: ", sqi_val[index], "ECG-RPeak-SQI: ", ecg_sqi[selected_rPeak])

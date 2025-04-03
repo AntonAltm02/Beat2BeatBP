@@ -1,6 +1,6 @@
 import numpy as np
 import xgboost as xgb
-from src.load import get_data, get_data_frame
+from src.load import get_data_frame
 import os
 
 script_dir = os.path.dirname(__file__)
